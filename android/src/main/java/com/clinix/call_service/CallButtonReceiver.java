@@ -1,3 +1,4 @@
+/*
 package com.clinix.call_service;
 
 import android.content.BroadcastReceiver;
@@ -30,3 +31,4 @@ public class CallButtonReceiver extends BroadcastReceiver {
         context.sendBroadcast(it);
     }
 }
+*/

@@ -13,7 +13,7 @@
         android:label="call_service_example"
         android:icon="@mipmap/ic_launcher">
         <activity
-            android:name="com.clinix.call_service.CallServiceActivity"
+            android:name=".MainActivity"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -43,8 +43,15 @@
         </activity>
        <service android:name="com.clinix.call_service.CallService"
            android:label="Clinix Connection Service">
+           <intent-filter>
+               <action android:name="android.media.browse.MediaBrowserService" />
+           </intent-filter>
        </service>
-       <receiver android:name="com.clinix.call_service.CallButtonReceiver" />
+       <receiver android:name="com.clinix.call_service.MediaButtonReceiver" >
+           <intent-filter>
+               <action android:name="android.intent.action.MEDIA_BUTTON" />
+           </intent-filter>
+       </receiver>
 
        <!-- Don't delete the meta-data below.
             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
