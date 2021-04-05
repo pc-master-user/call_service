@@ -119,7 +119,7 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
       // but we need to register a MethodCallHandler now just in case. If we're wrong, we
       // detect and correct this when receiving the "configure" message.
       callHandlerInterface = new CallHandlerInterface(flutterPluginBinding.getBinaryMessenger());
-      //CallService.init(callHandlerInterface);
+      CallService.init(callHandlerInterface);
     }
     if (telecomManager == null) {
       connect();
@@ -217,10 +217,10 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
   private void disconnect() {
     System.out.println("### disconnect");
     Activity activity = mainClientInterface != null ? mainClientInterface.activity : null;
-    if (activity != null) {
+    /*if (activity != null) {
       // Since the activity enters paused state, we set the intent with ACTION_MAIN.
       activity.setIntent(new Intent(Intent.ACTION_MAIN));
-    }
+    }*/
     //TODO deregister  Connection method callbacks
 
     telecomManager = null;
@@ -287,7 +287,7 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
             mainClientInterface = ClientInterface.this;
             if (callHandlerInterface == null) {
               callHandlerInterface = new CallHandlerInterface(messenger);
-              CallService.init(callHandlerInterface,this.activity);
+              CallService.init(callHandlerInterface);
             } else if (callHandlerInterface.messenger != messenger) {
               // We've detected this is the real engine hosting the AudioHandler,
               // so update AudioHandlerInterface to connect to it.

@@ -66,9 +66,8 @@ public class CallService extends Service {
     private static boolean playing;
     private FlutterEngine flutterEngine;
     private static Activity currentActivity;
-    public static void init(ServiceListener listener, Activity activity) {
+    public static void init(ServiceListener listener) {
         CallService.listener = listener;
-        currentActivity = activity;
     }
     private static String TAG = "CliniX:CallConnectionService";
     public static Map<String, VoiceConnection> currentConnections = new HashMap<>();
