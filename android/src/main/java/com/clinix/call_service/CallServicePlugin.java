@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -14,6 +15,7 @@ import android.telecom.Connection;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.telephony.TelephonyManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -214,7 +216,14 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
     }
     System.out.println("### connect returned");
   }
+  private void registerPhoneAccount(Context appContext) {
+    String appName = this.getApplicationName(applicationContext);
 
+    PhoneAccount.Builder builder = new PhoneAccount.Builder(handle, appName)
+            .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER| PhoneAccount.CAPABILITY_SELF_MANAGED);
+    PhoneAccount account = builder.build();
+    telecomManager.registerPhoneAccount(account);
+  }
   private void disconnect() {
     System.out.println("### disconnect");
     Activity activity = mainClientInterface != null ? mainClientInterface.activity : null;
