@@ -49,8 +49,9 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
   private static long bootTime;
   private boolean isReceiverRegistered = false;
   private static String flutterEngineId = "call_service_engine";
+  //Manifest.permission.CALL_PHONE,
   private static final String[] permissions = {
-          Manifest.permission.CALL_PHONE};
+          Manifest.permission.READ_PHONE_STATE,Manifest.permission.MANAGE_OWN_CALLS};
   static {
     bootTime = System.currentTimeMillis() - SystemClock.elapsedRealtime();
   }
@@ -204,11 +205,11 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
   private void connect() {
     System.out.println("### connect");
     if (telecomManager == null) {
-      /*ComponentName cName = new ComponentName(applicationContext, CallService.class);
+      ComponentName cName = new ComponentName(applicationContext, CallService.class);
       String appName = this.getApplicationName(applicationContext);
 
       handle = new PhoneAccountHandle(cName, appName);
-      telecomManager = (TelecomManager) applicationContext.getSystemService(Context.TELECOM_SERVICE);*/
+      telecomManager = (TelecomManager) applicationContext.getSystemService(Context.TELECOM_SERVICE);
       //TODO register  Connection method callbacks
     }
     System.out.println("### connect returned");
@@ -217,10 +218,10 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
   private void disconnect() {
     System.out.println("### disconnect");
     Activity activity = mainClientInterface != null ? mainClientInterface.activity : null;
-    /*if (activity != null) {
+    if (activity != null) {
       // Since the activity enters paused state, we set the intent with ACTION_MAIN.
       activity.setIntent(new Intent(Intent.ACTION_MAIN));
-    }*/
+    }
     //TODO deregister  Connection method callbacks
 
     telecomManager = null;
@@ -294,18 +295,7 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
               callHandlerInterface.switchToMessenger(messenger);
             }
             CallService.setAvailable(false);
-            /*ComponentName cName = new ComponentName(applicationContext, CallService.class);
-            Intent intent = new Intent();
-            intent.setComponent(cName);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-              applicationContext.startService(intent);
-              //applicationContext.startForegroundService(intent);
-            } else {
-              //applicationContext.startService(intent);
-            }*/
-            //this.registerPhoneAccount();
             CallService.setAvailable(true);
-            //result.success(mapOf());
             result.success(mapOf());
             break;
         }

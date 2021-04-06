@@ -44,7 +44,7 @@ import static com.clinix.call_service.Constants.EXTRA_CALLER_NAME;
 import static com.clinix.call_service.Constants.EXTRA_CALL_NUMBER;
 
 @RequiresApi(api = Build.VERSION_CODES.M)
-public class CallService extends Service {
+public class CallService extends ConnectionService {
     private static final int NOTIFICATION_ID = 1124;
     private static final int REQUEST_CONTENT_INTENT = 1000;
     public static final String NOTIFICATION_CLICK_ACTION = "com.clinix.call_service.NOTIFICATION_CLICK";
@@ -96,12 +96,6 @@ public class CallService extends Service {
         instance = null;
         //currentActivity=null;
         notificationCreated = false;
-    }
-
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
     }
 
     @Override
@@ -160,6 +154,7 @@ public class CallService extends Service {
                 "Hang UP",
                 buildStopPendingIntent());
         builder.setOngoing(true);
+        builder.setContentIntent(contentIntent);
         //builder.setStyle(style);
         Notification notification = builder.build();
         return notification;
