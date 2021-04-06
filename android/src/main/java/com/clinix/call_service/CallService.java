@@ -400,7 +400,7 @@ public class CallService extends MediaBrowserServiceCompat {
         builder.setUsesChronometer(true);
         builder.setCategory(Notification.CATEGORY_CALL);
         builder.addAction(getNotificationIcon("stop_icon"),
-                "Hang UP",
+                "Hang up",
                 buildMediaButtonPendingIntent(PlaybackStateCompat.ACTION_STOP));
         /*final MediaStyle style = new MediaStyle()
             .setMediaSession(mediaSession.getSessionToken())
