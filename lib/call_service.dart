@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -656,12 +655,12 @@ class AudioService {
 
   /// Stops the service.
   static Future<void> _stop() async {
-    final audioSession = await AudioSession.instance;
+    /*final audioSession = await AudioSession.instance;
     try {
       await audioSession.setActive(false);
     } catch (e) {
       print("While deactivating audio session: $e");
-    }
+    }*/
     await _platform.stopService(StopServiceRequest());
   }
 

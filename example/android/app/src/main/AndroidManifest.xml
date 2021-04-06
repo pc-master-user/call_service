@@ -42,11 +42,7 @@
             </intent-filter>
         </activity>
        <service android:name="com.clinix.call_service.CallService"
-           android:label="Clinix Connection Service"
-           android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
-           <intent-filter>
-               <action android:name="android.telecom.ConnectionService" />
-           </intent-filter>
+           android:label="Clinix Connection Service">
        </service>
        <receiver android:name="com.clinix.call_service.CallButtonReceiver" />
 

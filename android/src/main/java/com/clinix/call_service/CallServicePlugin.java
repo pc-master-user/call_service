@@ -5,11 +5,13 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.SystemClock;
 import android.telecom.Connection;
 import android.telecom.PhoneAccount;
@@ -124,9 +126,9 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
       callHandlerInterface = new CallHandlerInterface(flutterPluginBinding.getBinaryMessenger());
       CallService.init(callHandlerInterface);
     }
-    if (telecomManager == null) {
-      connect();
-    }
+    /*if (CallService.instance == null) {
+      connect(binding.);
+    }*/
     System.out.println("### onAttachedToEngine completed");
   }
 
@@ -135,7 +137,7 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
     System.out.println("### onDetachedFromEngine");
     System.out.println("### " + clientInterfaces.size() + " client handlers");
     if (clientInterfaces.size() == 1) {
-      disconnect();
+      disconnect(clientInterfaces.iterator().next().activity);
     }
     clientInterfaces.remove(clientInterface);
     clientInterface.setContext(null);
@@ -163,10 +165,21 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
     clientInterface.setContext(binding.getActivity());
     mainClientInterface = clientInterface;
     registerOnNewIntentListener();
-    if (telecomManager == null) {
-      connect();
-    }
+    connect(binding.getActivity(), applicationContext);
   }
+
+  ServiceConnection serviceConnection= new ServiceConnection(){
+
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder binder) {
+      System.out.println("onServiceConnected");
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName name) {
+      System.out.println("onServiceDisconnected");
+    }
+  };
 
   @Override
   public void onDetachedFromActivityForConfigChanges() {
@@ -190,50 +203,41 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
   public void onDetachedFromActivity() {
     System.out.println("### onDetachedFromActivity");
     activityPluginBinding.removeOnNewIntentListener(newIntentListener);
+    disconnect(activityPluginBinding.getActivity());
     activityPluginBinding = null;
     newIntentListener = null;
+    ;
     clientInterface.setActivity(null);
     clientInterface.setContext(flutterPluginBinding.getApplicationContext());
-    if (clientInterfaces.size() == 1) {
+    /*if (clientInterfaces.size() == 1) {
       // This unbinds from the service allowing AudioService.onDestroy to
       // happen which in turn allows the FlutterEngine to be destroyed.
       disconnect();
-    }
+    }*/
+
     if (clientInterface == mainClientInterface) {
       mainClientInterface = null;
     }
   }
-  @RequiresApi(api = Build.VERSION_CODES.M)
-  private void connect() {
-    System.out.println("### connect");
-    if (telecomManager == null) {
-      ComponentName cName = new ComponentName(applicationContext, CallService.class);
-      String appName = this.getApplicationName(applicationContext);
 
-      handle = new PhoneAccountHandle(cName, appName);
-      telecomManager = (TelecomManager) applicationContext.getSystemService(Context.TELECOM_SERVICE);
-      //TODO register  Connection method callbacks
-    }
+  boolean isServiceBound=false;
+  private void connect(Activity activity, Context context) {
+    System.out.println("### connect");
+    Intent intent = new Intent(applicationContext, CallService.class);
+    isServiceBound= activity.bindService(intent,serviceConnection,context.BIND_AUTO_CREATE);
     System.out.println("### connect returned");
   }
-  private void registerPhoneAccount(Context appContext) {
-    String appName = this.getApplicationName(applicationContext);
 
-    PhoneAccount.Builder builder = new PhoneAccount.Builder(handle, appName)
-            .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER| PhoneAccount.CAPABILITY_SELF_MANAGED);
-    PhoneAccount account = builder.build();
-    telecomManager.registerPhoneAccount(account);
-  }
-  private void disconnect() {
+  private void disconnect(Activity activity) {
     System.out.println("### disconnect");
-    Activity activity = mainClientInterface != null ? mainClientInterface.activity : null;
+    //Activity activity = mainClientInterface != null ? mainClientInterface.activity : null;
     if (activity != null) {
       // Since the activity enters paused state, we set the intent with ACTION_MAIN.
       activity.setIntent(new Intent(Intent.ACTION_MAIN));
+      activity.unbindService(serviceConnection);
     }
+    isServiceBound=false;
     //TODO deregister  Connection method callbacks
-
-    telecomManager = null;
     System.out.println("### disconnect returned");
   }
 
@@ -250,7 +254,7 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
 
   private static class ClientInterface implements MethodCallHandler {
     private Context context;
-    private Activity activity;
+    protected Activity activity;
     public final BinaryMessenger messenger;
     private MethodChannel channel;
     public ClientInterface(BinaryMessenger messenger) {
@@ -424,7 +428,7 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
           String errorMessage = (String)stateMap.get("errorMessage");
           result.success(null);
           if(playing==true && isPlaying!=true){
-            launchForegroundService();
+            CallService.instance.startService();
             isPlaying= true;
           }
           // On the flutter side, we represent the update time relative to the epoch.
@@ -440,19 +444,6 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
           result.success(null);
           break;
         }
-      }
-    }
-    private void launchForegroundService() {
-      try{
-        Intent intent = new Intent(applicationContext, CallService.class);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-          applicationContext.startForegroundService(intent);
-        } else {
-          applicationContext.startService(intent);
-        }
-      }catch (Exception e){
-        System.out.println("Printed start "+e.toString());
       }
     }
   }

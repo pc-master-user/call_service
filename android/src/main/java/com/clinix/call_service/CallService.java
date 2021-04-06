@@ -11,6 +11,7 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,7 +20,6 @@ import android.os.PowerManager;
 import android.telecom.CallAudioState;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
-import android.telecom.ConnectionService;
 import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
@@ -29,25 +29,25 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
-import static com.clinix.call_service.Constants.*;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import io.flutter.embedding.engine.FlutterEngine;
 
 import static com.clinix.call_service.Constants.EXTRA_CALLER_NAME;
 import static com.clinix.call_service.Constants.EXTRA_CALL_NUMBER;
+import static com.clinix.call_service.Constants.EXTRA_CALL_UUID;
 
 @RequiresApi(api = Build.VERSION_CODES.M)
-public class CallService extends ConnectionService {
+public class CallService extends Service {
     private static final int NOTIFICATION_ID = 1124;
     private static final int REQUEST_CONTENT_INTENT = 1000;
     public static final String NOTIFICATION_CLICK_ACTION = "com.clinix.call_service.NOTIFICATION_CLICK";
+    public static final String NOTIFICATION_CHANNEL_ID = "CallChannel";
+    public static final String ACTION_STOP_SERVICE = "STOP";
     private static PendingIntent contentIntent;
     private static ServiceListener listener;
     static CallService instance;
@@ -83,6 +83,8 @@ public class CallService extends ConnectionService {
     }
 
     public void stop(){
+        stopForeground(true);
+        releaseWakeLock();
         stopSelf();
     }
     @Override
@@ -98,11 +100,17 @@ public class CallService extends ConnectionService {
         notificationCreated = false;
     }
 
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
-        notificationChannelId = getApplication().getPackageName() + ".channel";
+        notificationChannelId = "CallService";
         config = new CallServiceConfig(getApplicationContext());
         if (config.activityClassName != null) {
             Context context = getApplicationContext();
@@ -125,11 +133,13 @@ public class CallService extends ConnectionService {
 
     @Override
     public int onStartCommand(final Intent intent, int flags, int startId) {
-        System.out.println("### onStartCommand");
-        acquireWakeLock();
-        //internalStartForeground();
-        startForeground(NOTIFICATION_ID, buildNotification());
-        notificationCreated = true;
+        if(intent.getAction()==null){
+            System.out.println("### onStartCommand");
+            acquireWakeLock();
+            return START_NOT_STICKY;
+        }else if(intent.getAction()== ACTION_STOP_SERVICE){
+            listener.onStop();
+        }
         return START_NOT_STICKY;
     }
 
@@ -144,20 +154,45 @@ public class CallService extends ConnectionService {
         currentConnections.put(extras.getString(EXTRA_CALL_UUID), connection);
         return connection;
     }
+
+    public void startService(){
+        startService(new Intent(this, CallService.class));
+        startForeground(NOTIFICATION_ID, buildNotification());
+        notificationCreated = true;
+    }
+
     private Notification buildNotification() {
-        NotificationCompat.Builder builder = getNotificationBuilder();
-        if (config.notificationColor != -1)
-            builder.setColor(config.notificationColor);
-        builder.setUsesChronometer(true);
-        builder.setCategory(Notification.CATEGORY_CALL);
+        PackageManager pm = getApplicationContext().getPackageManager();
+        Intent notificationIntent = pm.getLaunchIntentForPackage(getApplicationContext().getPackageName());
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+                notificationIntent, 0);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                    "flutter_foreground_service_channel",
+                    NotificationManager.IMPORTANCE_DEFAULT);
+
+            ((NotificationManager) getSystemService(NOTIFICATION_SERVICE))
+                    .createNotificationChannel(channel);
+        }
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(getNotificationIcon("app_icon"))
+                .setColor(config.notificationColor)
+                .setContentTitle("title")
+                .setContentText("content")
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .setContentIntent(pendingIntent)
+                .setUsesChronometer(true)
+                .setOngoing(true);
+        Intent stopSelf = new Intent(this, CallService.class);
+        stopSelf.setAction(ACTION_STOP_SERVICE);
+        PendingIntent pStopSelf = PendingIntent
+                .getService(this, 0, stopSelf, PendingIntent.FLAG_CANCEL_CURRENT);
         builder.addAction(getNotificationIcon("stop_icon"),
-                "Hang UP",
-                buildStopPendingIntent());
-        builder.setOngoing(true);
-        builder.setContentIntent(contentIntent);
-        //builder.setStyle(style);
-        Notification notification = builder.build();
-        return notification;
+                "HangUp",
+                pStopSelf);
+        builder.setSubText("subtext");
+        return  builder.build();
     }
     private NotificationCompat.Builder getNotificationBuilder() {
         NotificationCompat.Builder notificationBuilder = null;
