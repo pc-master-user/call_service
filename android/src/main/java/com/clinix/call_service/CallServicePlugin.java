@@ -204,11 +204,11 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
   private void connect() {
     System.out.println("### connect");
     if (telecomManager == null) {
-      ComponentName cName = new ComponentName(applicationContext, CallService.class);
+      /*ComponentName cName = new ComponentName(applicationContext, CallService.class);
       String appName = this.getApplicationName(applicationContext);
 
       handle = new PhoneAccountHandle(cName, appName);
-      telecomManager = (TelecomManager) applicationContext.getSystemService(Context.TELECOM_SERVICE);
+      telecomManager = (TelecomManager) applicationContext.getSystemService(Context.TELECOM_SERVICE);*/
       //TODO register  Connection method callbacks
     }
     System.out.println("### connect returned");
