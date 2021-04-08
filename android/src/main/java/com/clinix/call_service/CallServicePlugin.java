@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
+import android.telecom.Call;
 import android.telecom.Connection;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
@@ -53,9 +54,6 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
   private static long bootTime;
   private boolean isReceiverRegistered = false;
   private static String flutterEngineId = "call_service_engine";
-  //Manifest.permission.CALL_PHONE,
-  private static final String[] permissions = {
-          Manifest.permission.READ_PHONE_STATE,Manifest.permission.MANAGE_OWN_CALLS};
   static {
     bootTime = System.currentTimeMillis() - SystemClock.elapsedRealtime();
   }
@@ -120,7 +118,7 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
       applicationContext = flutterPluginBinding.getApplicationContext();
     }
     if (callHandlerInterface == null) {
-      // We don't know yet whether this is the right engine that hosts the BackgroundAudioTask,
+      // We don't know yet whether this is the right engine that hosts the BackgroundCallTask,
       // but we need to register a MethodCallHandler now just in case. If we're wrong, we
       // detect and correct this when receiving the "configure" message.
       callHandlerInterface = new CallHandlerInterface(flutterPluginBinding.getBinaryMessenger());
@@ -156,6 +154,7 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
     }
   }
 
+
   @RequiresApi(api = Build.VERSION_CODES.M)
   @Override
   public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
@@ -168,18 +167,22 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
     connect(binding.getActivity(), applicationContext);
   }
 
-  ServiceConnection serviceConnection= new ServiceConnection(){
+  private ServiceConnection serviceConnection;
+  private void initConnection(){
+    serviceConnection = new ServiceConnection(){
 
-    @Override
-    public void onServiceConnected(ComponentName name, IBinder binder) {
-      System.out.println("onServiceConnected");
-    }
+      @Override
+      public void onServiceConnected(ComponentName name, IBinder binder) {
+        System.out.println("onServiceConnected");
+      }
 
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
-      System.out.println("onServiceDisconnected");
-    }
-  };
+      @Override
+      public void onServiceDisconnected(ComponentName name) {
+        System.out.println("onServiceDisconnected");
+      }
+    };
+  }
+
 
   @Override
   public void onDetachedFromActivityForConfigChanges() {
@@ -206,11 +209,10 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
     disconnect(activityPluginBinding.getActivity());
     activityPluginBinding = null;
     newIntentListener = null;
-    ;
     clientInterface.setActivity(null);
     clientInterface.setContext(flutterPluginBinding.getApplicationContext());
     /*if (clientInterfaces.size() == 1) {
-      // This unbinds from the service allowing AudioService.onDestroy to
+      // This unbinds from the service allowing CallService.onDestroy to
       // happen which in turn allows the FlutterEngine to be destroyed.
       disconnect();
     }*/
@@ -224,7 +226,12 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
   private void connect(Activity activity, Context context) {
     System.out.println("### connect");
     Intent intent = new Intent(applicationContext, CallService.class);
-    isServiceBound= activity.bindService(intent,serviceConnection,context.BIND_AUTO_CREATE);
+
+      if(!isServiceBound){
+        initConnection();
+        isServiceBound = activity.bindService(intent,serviceConnection,context.BIND_AUTO_CREATE);
+      }
+
     System.out.println("### connect returned");
   }
 
@@ -303,12 +310,10 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
               callHandlerInterface = new CallHandlerInterface(messenger);
               CallService.init(callHandlerInterface);
             } else if (callHandlerInterface.messenger != messenger) {
-              // We've detected this is the real engine hosting the AudioHandler,
-              // so update AudioHandlerInterface to connect to it.
+              // We've detected this is the real engine hosting the CallHandler,
+              // so update CallHandlerInterface to connect to it.
               callHandlerInterface.switchToMessenger(messenger);
             }
-            CallService.setAvailable(false);
-            CallService.setAvailable(true);
             result.success(mapOf());
             break;
         }
@@ -323,7 +328,7 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
     public BinaryMessenger messenger;
     public MethodChannel channel;
     public CallHandlerInterface(BinaryMessenger messenger) {
-      System.out.println("### new AudioHandlerInterface");
+      System.out.println("### new CallHandlerInterface");
       this.messenger = messenger;
       channel = new MethodChannel(messenger, CHANNEL_HANDLER);
       channel.setMethodCallHandler(this);
@@ -398,39 +403,28 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
     public void onDestroy() {
       disposeFlutterEngine();
     }
-    private String id;
-    private String name;
-    private String title;
-    private boolean isPlaying = false;
+
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
-      System.out.println("### AudioHandlerInterface message: " + call.method);
+      System.out.println("### CallHandlerInterface message: " + call.method);
       Map<?, ?> args = (Map<?, ?>)call.arguments;
       switch (call.method) {
         case "setMediaItem": {
           Map<?, ?> rawMediaItem = (Map<?, ?>)args.get("mediaItem");
-          id= (String)rawMediaItem.get("id");
-          name= (String)rawMediaItem.get("album");
-          title=  (String)rawMediaItem.get("title");
-          /*MediaMetadataCompat mediaMetadata = createMediaMetadata(rawMediaItem);
-          AudioService.instance.setMetadata(mediaMetadata);*/
+          CallData callData = createCallData(rawMediaItem);
+          CallService.instance.setCallData(callData);
           result.success(null);
           break;
         }
-
         case "setState": {
           Map<?, ?> stateMap = (Map<?, ?>)args.get("state");
-          AudioProcessingState processingState = AudioProcessingState.values()[(Integer)stateMap.get("processingState")];
+          CallProcessingState processingState = CallProcessingState.values()[(Integer)stateMap.get("processingState")];
           boolean playing = (Boolean)stateMap.get("playing");
           long updateTimeSinceEpoch = stateMap.get("updateTime") == null ? System.currentTimeMillis() : getLong(stateMap.get("updateTime"));
           Integer errorCode = (Integer)stateMap.get("errorCode");
           String errorMessage = (String)stateMap.get("errorMessage");
-          result.success(null);
-          if(playing==true && isPlaying!=true){
-            CallService.instance.startService();
-            isPlaying= true;
-          }
+          CallService.instance.setState(processingState,playing, errorCode,errorMessage);
           // On the flutter side, we represent the update time relative to the epoch.
           // On the native side, we must represent the update time relative to the boot time.
           long updateTimeSinceBoot = updateTimeSinceEpoch - bootTime;
@@ -440,13 +434,20 @@ public class CallServicePlugin implements FlutterPlugin, ActivityAware {
           if (CallService.instance != null) {
             CallService.instance.stop();
           }
-          isPlaying= false;
           result.success(null);
           break;
         }
       }
     }
+    private static CallData createCallData(Map<?, ?> rawMediaItem) {
+      CallData callData= new CallData();
+      callData.callId= (String)rawMediaItem.get("id");
+      callData.callerName= (String)rawMediaItem.get("title");
+      callData.description= (String)rawMediaItem.get("album");
+      return callData;
+    }
   }
+
 
   static Map<String, Object> mapOf(Object... args) {
     Map<String, Object> map = new HashMap<String, Object>();

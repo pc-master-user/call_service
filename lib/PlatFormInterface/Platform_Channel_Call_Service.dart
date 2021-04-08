@@ -735,6 +735,7 @@ class ConfigureRequest {
   };
 }
 
+
 class ConfigureResponse {
   static ConfigureResponse fromMap(Map<dynamic, dynamic> map) =>
       ConfigureResponse();

@@ -194,7 +194,7 @@ packages:
     source: hosted
     version: "3.0.0"
   plugin_platform_interface:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: plugin_platform_interface
       url: "https://pub.dartlang.org"
