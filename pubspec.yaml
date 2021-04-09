@@ -11,8 +11,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  plugin_platform_interface: ^2.0.0
-  audio_session: ^0.1.0
   rxdart: ^0.26.0
   flutter_cache_manager: ^3.0.0-nullsafety.1
     # This sqflite constraint is needed to make the >= 2.0.0 versions of

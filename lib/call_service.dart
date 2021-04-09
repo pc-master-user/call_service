@@ -2,12 +2,10 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:call_service/PlatFormInterface/MethodChannel_Call_Service.dart';
 import 'package:call_service/PlatFormInterface/Platform_Channel_Call_Service.dart';
 
 CallServicePlatform _platform = CallServicePlatform.instance;
@@ -656,12 +654,12 @@ class AudioService {
 
   /// Stops the service.
   static Future<void> _stop() async {
-    final audioSession = await AudioSession.instance;
+    /*final audioSession = await AudioSession.instance;
     try {
       await audioSession.setActive(false);
     } catch (e) {
       print("While deactivating audio session: $e");
-    }
+    }*/
     await _platform.stopService(StopServiceRequest());
   }
 
@@ -725,50 +723,6 @@ class AudioService {
   /// Deprecated. Use [AudioHandler.updateMediaItem] instead.
   @deprecated
   static final updateMediaItem = _handler.updateMediaItem;
-
-  /// Deprecated. Use [AudioHandler.click] instead.
-  @deprecated
-  static final Future<void> Function([MediaButton]) click = _handler.click;
-
-  /// Deprecated. Use [AudioHandler.prepare] instead.
-  @deprecated
-  static final prepare = _handler.prepare;
-
-  /// Deprecated. Use [AudioHandler.prepareFromMediaId] instead.
-  @deprecated
-  static final Future<void> Function(String, [Map<String, dynamic>])
-  prepareFromMediaId = _handler.prepareFromMediaId;
-
-  /// Deprecated. Use [AudioHandler.play] instead.
-  @deprecated
-  static final play = _handler.play;
-
-  /// Deprecated. Use [AudioHandler.playFromMediaId] instead.
-  @deprecated
-  static final Future<void> Function(String, [Map<String, dynamic>])
-  playFromMediaId = _handler.playFromMediaId;
-
-  /// Deprecated. Use [AudioHandler.playMediaItem] instead.
-  @deprecated
-  static final playMediaItem = _handler.playMediaItem;
-
-  /// Deprecated. Use [AudioHandler.pause] instead.
-  @deprecated
-  static final pause = _handler.pause;
-
-  /// Deprecated. Use [AudioHandler.stop] instead.
-  @deprecated
-  static final stop = _handler.stop;
-
-  /// Deprecated. Use [AudioHandler.setRating] instead.
-  @deprecated
-  static final Future<void> Function(Rating, Map<dynamic, dynamic>) setRating =
-      _handler.setRating;
-
-  /// Deprecated. Use [AudioHandler.customAction] instead.
-  @deprecated
-  static final Future<dynamic> Function(String, Map<String, dynamic>)
-  customAction = _handler.customAction;
 }
 
 /// An [AudioHandler] plays audio, provides state updates and query results to
@@ -1022,7 +976,7 @@ class _IsolateRequest {
   _IsolateRequest(this.sendPort, this.method, [this.arguments]);
 }
 
-const _isolatePortName = 'com.ryanheise.audioservice.port';
+const _isolatePortName = 'com.clinix.call_service.port';
 
 class _IsolateAudioHandler extends AudioHandler {
 
@@ -1528,110 +1482,6 @@ class RemoteAndroidPlaybackInfo extends AndroidPlaybackInfo {
 class LocalAndroidPlaybackInfo extends AndroidPlaybackInfo {
   LocalAndroidPlaybackInfoMessage _toMessage() =>
       LocalAndroidPlaybackInfoMessage();
-}
-
-@deprecated
-class AudioServiceBackground {
-  static BaseAudioHandler get _handler =>
-      AudioService._handler as BaseAudioHandler;
-
-  /// The current media item.
-  ///
-  /// This is the value most recently set via [setMediaItem].
-  static PlaybackState get state =>
-      _handler.playbackState.value ?? PlaybackState();
-
-  /// Broadcasts to all clients the current state, including:
-  ///
-  /// * Whether media is playing or paused
-  /// * Whether media is buffering or skipping
-  /// * The current position, buffered position and speed
-  /// * The current set of media actions that should be enabled
-  ///
-  /// Connected clients will use this information to update their UI.
-  ///
-  /// You should use [controls] to specify the set of clickable buttons that
-  /// should currently be visible in the notification in the current state,
-  /// where each button is a [MediaControl] that triggers a different
-  /// [MediaAction]. Only the following actions can be enabled as
-  /// [MediaControl]s:
-  ///
-  /// * [MediaAction.stop]
-  /// * [MediaAction.pause]
-  /// * [MediaAction.play]
-  /// * [MediaAction.rewind]
-  /// * [MediaAction.skipToPrevious]
-  /// * [MediaAction.skipToNext]
-  /// * [MediaAction.fastForward]
-  /// * [MediaAction.playPause]
-  ///
-  /// Any other action you would like to enable for clients that is not a clickable
-  /// notification button should be specified in the [systemActions] parameter. For
-  /// example:
-  ///
-  /// * [MediaAction.seekTo] (enable a seek bar)
-  /// * [MediaAction.seekForward] (enable press-and-hold fast-forward control)
-  /// * [MediaAction.seekBackward] (enable press-and-hold rewind control)
-  ///
-  /// In practice, iOS will treat all entries in [controls] and [systemActions]
-  /// in the same way since you cannot customise the icons of controls in the
-  /// Control Center. However, on Android, the distinction is important as clickable
-  /// buttons in the notification require you to specify your own icon.
-  ///
-  /// Note that specifying [MediaAction.seekTo] in [systemActions] will enable
-  /// a seek bar in both the Android notification and the iOS control center.
-  /// [MediaAction.seekForward] and [MediaAction.seekBackward] have a special
-  /// behaviour on iOS in which if you have already enabled the
-  /// [MediaAction.skipToNext] and [MediaAction.skipToPrevious] buttons, these
-  /// additional actions will allow the user to press and hold the buttons to
-  /// activate the continuous seeking behaviour.
-  ///
-  /// On Android, a media notification has a compact and expanded form. In the
-  /// compact view, you can optionally specify the indices of up to 3 of your
-  /// [controls] that you would like to be shown via [androidCompactActions].
-  ///
-  /// The playback [position] should NOT be updated continuously in real time.
-  /// Instead, it should be updated only when the normal continuity of time is
-  /// disrupted, such as during a seek, buffering and seeking. When
-  /// broadcasting such a position change, the [updateTime] specifies the time
-  /// of that change, allowing clients to project the realtime value of the
-  /// position as `position + (DateTime.now() - updateTime)`. As a convenience,
-  /// this calculation is provided by [PlaybackState.currentPosition].
-  ///
-  /// The playback [speed] is given as a double where 1.0 means normal speed.
-  static Future<void> setState({
-    List<MediaControl> controls,
-    List<MediaAction> systemActions,
-    AudioProcessingState processingState,
-    bool playing,
-    Duration position,
-    Duration bufferedPosition,
-    double speed,
-    DateTime updateTime,
-    List<int> androidCompactActions,
-  }) async {
-    _handler.playbackState.add(_handler.playbackState.value.copyWith(
-      controls: controls,
-      systemActions: systemActions?.toSet(),
-      processingState: processingState,
-      playing: playing,
-      androidCompactActionIndices: androidCompactActions,
-    ));
-  }
-
-  /// Sets the currently playing media item and notifies all clients.
-  static Future<void> setMediaItem(MediaItem mediaItem) async {
-    _handler.mediaItem.add(mediaItem);
-  }
-
-  /// Sends a custom event to the Flutter UI.
-  ///
-  /// The event parameter can contain any data permitted by Dart's
-  /// SendPort/ReceivePort API. Please consult the relevant documentation for
-  /// further information.
-  static void sendCustomEvent(dynamic event) {
-    _handler.customEventSubject.add(event);
-  }
 }
 
 class _HandlerCallbacks extends CallHandlerCallbacks {

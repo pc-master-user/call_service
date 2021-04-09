@@ -24,7 +24,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   path_provider: ^2.0.1
-  audio_session: ^0.1.0
     # flutter_tts: ^0.8.5
   rxdart: ^0.26.0
   agora_rtc_engine: ^3.3.1

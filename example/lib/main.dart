@@ -1,26 +1,15 @@
 import 'dart:async';
-//import 'dart:io';
-import 'dart:math';
-// @dart=2.9
-// ignore: import_of_legacy_library_into_null_safe
 import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
 import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
-import 'package:audio_session/audio_session.dart';
 import 'package:call_service/call_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-//import 'package:flutter_tts/flutter_tts.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'PermissionHelper.dart';
 
-//final _isTtsSupported = kIsWeb || !Platform.isMacOS;
-
-// You might want to provide this using dependency injection rather than a
-// global variable.
 AudioHandler _audioHandler;
-
 /// Extension methods for our custom actions.
 extension DemoAudioHandler on AudioHandler {
   Future<void> switchToHandler(int index) async {
@@ -30,14 +19,20 @@ extension DemoAudioHandler on AudioHandler {
 }
 
 Future<void> main() async {
-  _audioHandler = await AudioService.init(
-    builder: () =>  AudioPlayerHandler(),
-    config: CallServiceConfig(
-      androidNotificationChannelName: 'Audio Service Demo',
-      androidNotificationOngoing: true,
-      androidEnableQueue: true,
-    ),
-  );
+  if(_audioHandler==null){
+    _audioHandler = await AudioService.init(
+      builder: () =>  AudioPlayerHandler(),
+      config: CallServiceConfig(
+        androidNotificationChannelName: 'Audio Service Demo',
+        androidNotificationOngoing: true,
+        androidEnableQueue: true,
+      ),
+    );
+  }
+  _audioHandler.prepareFromMediaId("c6c2096f-21aa-40de-ab63-5654053d2f0b",{
+    "album": "Psychiatry Consult",
+    "title": 'Prabhakar'
+  });
   runApp(new MyApp());
 }
 
@@ -172,7 +167,6 @@ class MediaState {
   MediaState(this.mediaItem, this.position);
 }
 
-/// An [AudioHandler] for playing a list of podcast episodes.
 class AudioPlayerHandler extends BaseAudioHandler
    {
   MediaItem itm= MediaItem(
@@ -183,6 +177,7 @@ class AudioPlayerHandler extends BaseAudioHandler
   // ignore: close_sinks
   final BehaviorSubject<MediaItem> _recentSubject =
   BehaviorSubject<MediaItem>();
+
 
   static const appId = 'c67b893eb46f4e1380d5ae46e48dc0f5';
   RtcEngine _engine;
@@ -218,19 +213,24 @@ class AudioPlayerHandler extends BaseAudioHandler
     return camAccess && micAccess && phoneAccess;
   }
 
-  String token = '006c67b893eb46f4e1380d5ae46e48dc0f5IAAi1MeVEhJPDZemSZZgJIMzBV02zu7pVvfltsfzaCIZ5WbxuZPYfoVVIgBQ032piUdsYAQAAQCJR2xgAgCJR2xgAwCJR2xgBACJR2xg';
   @override
-  Future<void> play() async {
-    if(_engine==null){
-      await initRtcEngine();
-    }
-
-    ChannelMediaOptions options = ChannelMediaOptions(true, true);
+  Future<void> prepareFromMediaId(String mediaId, [Map<String, dynamic> extras]) async {
     mediaItem.add(MediaItem(
         id: 'c6c2096f-21aa-40de-ab63-5654053d2f0b',
         album: "Psychiatry Consult",
         title: 'Prabhakar'
     ));
+    trigger(false, AudioProcessingState.loading);
+  }
+
+  String token = '006c67b893eb46f4e1380d5ae46e48dc0f5IACywavqB61UePrUB8UrOlyVA1T8sQ+I4m1oJinxnIGP8GbxuZPYfoVVIgDLPH4CVItxYAQAAQBUi3FgAgBUi3FgAwBUi3FgBABUi3Fg';
+
+  @override
+  Future<void> play() async {
+    if(_engine==null){
+      await initRtcEngine();
+    }
+    ChannelMediaOptions options = ChannelMediaOptions(true, true);
     try {
       await _engine.enableVideo();
       await _engine.enableAudio();
@@ -241,15 +241,6 @@ class AudioPlayerHandler extends BaseAudioHandler
     }
   }
   static int userId=0;
-  static getLocalView() {
-    return RtcRemoteView.SurfaceView(
-      channelId: '58438b40-ccdb-4121-b805-b774527185c0',
-      onPlatformViewCreated: (int) {
-        //notifyListeners();
-      },
-    );
-    //return RtcLocalView.SurfaceView();
-  }
 
   @override
   Future<void> stop() async {
@@ -285,7 +276,6 @@ class AudioPlayerHandler extends BaseAudioHandler
   }
   trigger(bool isJoined, AudioProcessingState state){
     playbackState.add(playbackState.value.copyWith(
-
       controls: [ MediaControl.stop,],
       playing: isJoined,
       processingState: state,
