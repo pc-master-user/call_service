@@ -223,7 +223,7 @@ class AudioPlayerHandler extends BaseAudioHandler
     trigger(false, AudioProcessingState.loading);
   }
 
-  String token = '006c67b893eb46f4e1380d5ae46e48dc0f5IADxO/1n8hH986n3a0SN8LfZCrbMGNjVndiQ5uC1iDOHJGbxuZPYfoVVIgCACw/+1RFvYAQAAQDVEW9gAgDVEW9gAwDVEW9gBADVEW9g';
+  String token = '006c67b893eb46f4e1380d5ae46e48dc0f5IACywavqB61UePrUB8UrOlyVA1T8sQ+I4m1oJinxnIGP8GbxuZPYfoVVIgDLPH4CVItxYAQAAQBUi3FgAgBUi3FgAwBUi3FgBABUi3Fg';
 
   @override
   Future<void> play() async {

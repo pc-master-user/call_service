@@ -316,9 +316,9 @@ public class CallService extends Service {
             // TODO: Handle completed state as well?
             stop();
         }
-        if(processingState == CallProcessingState.loading){
+        /*if(processingState == CallProcessingState.loading){
             enterRingingState();
-        }
+        }*/
         //updateNotification();
     }
 
