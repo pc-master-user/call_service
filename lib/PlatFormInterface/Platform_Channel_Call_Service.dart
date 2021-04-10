@@ -4,20 +4,20 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'MethodChannel_Call_Service.dart';
 
 abstract class CallServicePlatform extends PlatformInterface {
-  /// Constructs an AudioServicePlatform.
+  /// Constructs an CallServicePlatform.
   CallServicePlatform() : super(token: _token);
 
   static final Object _token = Object();
 
   static CallServicePlatform _instance = MethodChannelCallService();
 
-  /// The default instance of [AudioServicePlatform] to use.
+  /// The default instance of [CallServicePlatform] to use.
   ///
-  /// Defaults to [MethodChannelAudioService].
+  /// Defaults to [MethodChannelCallService].
   static CallServicePlatform get instance => _instance;
 
   /// Platform-specific plugins should set this with their own platform-specific
-  /// class that extends [AudioServicePlatform] when they register themselves.
+  /// class that extends [CallServicePlatform] when they register themselves.
   // TODO(amirh): Extract common platform interface logic.
   // https://github.com/flutter/flutter/issues/43368
   static set instance(CallServicePlatform instance) {
@@ -114,8 +114,8 @@ abstract class CallHandlerCallbacks {
 
 }
 
-/// The different states during audio processing.
-enum AudioProcessingStateMessage {
+/// The different states during Call processing.
+enum CallProcessingStateMessage {
   idle,
   loading,
   buffering,
@@ -124,7 +124,7 @@ enum AudioProcessingStateMessage {
   error,
 }
 
-/// The actons associated with playing audio.
+/// The actons associated with playing Call.
 enum MediaActionMessage {
   stop,
   pause,
@@ -177,21 +177,21 @@ class MediaControlMessage {
 }
 
 /// The playback state which includes a [playing] boolean state, a processing
-/// state such as [AudioProcessingState.buffering], the playback position and
+/// state such as [CallProcessingState.buffering], the playback position and
 /// the currently enabled actions to be shown in the Android notification or the
 /// iOS control center.
 class PlaybackStateMessage {
-  /// The audio processing state e.g. [BasicPlaybackState.buffering].
-  final AudioProcessingStateMessage processingState;
+  /// The Call processing state e.g. [BasicPlaybackState.buffering].
+  final CallProcessingStateMessage processingState;
 
-  /// Whether audio is either playing, or will play as soon as [processingState]
-  /// is [AudioProcessingState.ready]. A true value should be broadcast whenever
+  /// Whether Call is either playing, or will play as soon as [processingState]
+  /// is [CallProcessingState.ready]. A true value should be broadcast whenever
   /// it would be appropriate for UIs to display a pause or stop button.
   ///
   /// Since [playing] and [processingState] can vary independently, it is
-  /// possible distinguish a particular audio processing state while audio is
+  /// possible distinguish a particular Call processing state while Call is
   /// playing vs paused. For example, when buffering occurs during a seek, the
-  /// [processingState] can be [AudioProcessingState.buffering], but alongside
+  /// [processingState] can be [CallProcessingState.buffering], but alongside
   /// that [playing] can be true to indicate that the seek was performed while
   /// playing, or false to indicate that the seek was performed while paused.
   final bool playing;
@@ -233,25 +233,25 @@ class PlaybackStateMessage {
   ///
   /// When enabling the seek bar, also note that some Android devices will not
   /// render the seek bar correctly unless your
-  /// [AudioServiceConfig.androidNotificationIcon] is a monochrome white icon on
-  /// a transparent background, and your [AudioServiceConfig.notificationColor]
+  /// [CallServiceConfig.androidNotificationIcon] is a monochrome white icon on
+  /// a transparent background, and your [CallServiceConfig.notificationColor]
   /// is a non-transparent color.
   final Set<MediaActionMessage> systemActions;
 
   /// The time at which the playback position was last updated.
   final DateTime updateTime;
 
-  /// The error code when [processingState] is [AudioProcessingState.error].
+  /// The error code when [processingState] is [CallProcessingState.error].
   final int errorCode;
 
-  /// The error message when [processingState] is [AudioProcessingState.error].
+  /// The error message when [processingState] is [CallProcessingState.error].
   final String errorMessage;
 
 
   /// Creates a [PlaybackState] with given field values, and with [updateTime]
   /// defaulting to [DateTime.now()].
   PlaybackStateMessage({
-    this.processingState = AudioProcessingStateMessage.idle,
+    this.processingState = CallProcessingStateMessage.idle,
     this.playing = false,
     this.controls = const [],
     this.androidCompactActionIndices,
@@ -265,7 +265,7 @@ class PlaybackStateMessage {
 
   factory PlaybackStateMessage.fromMap(Map map) => PlaybackStateMessage(
     processingState:
-    AudioProcessingStateMessage.values[map['processingState']],
+    CallProcessingStateMessage.values[map['processingState']],
     playing: map['playing'],
     controls: [],
     androidCompactActionIndices: null,
@@ -306,7 +306,7 @@ abstract class AndroidPlaybackInfoMessage {
 }
 
 class RemoteAndroidPlaybackInfoMessage extends AndroidPlaybackInfoMessage {
-  //final AndroidAudioAttributes audioAttributes;
+  //final AndroidCallAttributes CallAttributes;
   final AndroidVolumeControlTypeMessage volumeControlType;
   final int maxVolume;
   final int volume;

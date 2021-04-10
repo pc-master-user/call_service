@@ -19,47 +19,19 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3815b775-907a-45e9-8cf1-10c497b37f23" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/android/.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/android/src/main/java/com/clinix/call_service/AudioProcessingState.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/android/src/main/java/com/clinix/call_service/CallService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/android/src/main/java/com/clinix/call_service/CallServiceConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/android/src/main/java/com/clinix/call_service/Callback.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/android/src/main/java/com/clinix/call_service/Constants.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/android/src/main/java/com/clinix/call_service/MediaControl.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/android/src/main/java/com/clinix/call_service/PermissionUtils.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/example/lib/PermissionHelper.dart" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/PlatFormInterface/MethodChannel_Call_Service.dart" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/PlatFormInterface/Platform_Channel_Call_Service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" afterDir="false" />
+    <list default="true" id="dd1cf6c6-ba08-4869-8092-d57a08dd0a3a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/src/main/AndroidManifest.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/src/main/java/com/clinix/call_service/CallServicePlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/android/src/main/java/com/clinix/call_service/CallServicePlugin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/call_service.iml" beforeDir="false" afterPath="$PROJECT_DIR$/call_service.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/example/android/app/src/main/AndroidManifest.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/example/android/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/example/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/example/lib/main.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/example/pubspec.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/example/pubspec.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/PlatFormInterface/Platform_Channel_Call_Service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/PlatFormInterface/Platform_Channel_Call_Service.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/call_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/call_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/call_service_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/call_service_test.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[RF8N11VY0MD]" />
-  <component name="FileTemplateManagerImpl">
-    <option name="RECENT_TEMPLATES">
-      <list>
-        <option value="Dart File" />
-      </list>
-    </option>
-  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[Pixel_4_API_30]" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>

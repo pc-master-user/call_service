@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -19,7 +18,7 @@ enum MediaButton {
   previous,
 }
 
-/// The actons associated with playing audio.
+/// The actons associated with playing Call.
 enum MediaAction {
   stop,
   pause,
@@ -47,8 +46,8 @@ enum MediaAction {
   seekForward,
 }
 
-/// The different states during audio processing.
-enum AudioProcessingState {
+/// The different states during Call processing.
+enum CallProcessingState {
   idle,
   loading,
   buffering,
@@ -58,21 +57,21 @@ enum AudioProcessingState {
 }
 
 /// The playback state which includes a [playing] boolean state, a processing
-/// state such as [AudioProcessingState.buffering], the playback position and
+/// state such as [CallProcessingState.buffering], the playback position and
 /// the currently enabled actions to be shown in the Android notification or the
 /// iOS control center.
 class PlaybackState {
-  /// The audio processing state e.g. [BasicPlaybackState.buffering].
-  final AudioProcessingState processingState;
+  /// The Call processing state e.g. [BasicPlaybackState.buffering].
+  final CallProcessingState processingState;
 
-  /// Whether audio is either playing, or will play as soon as [processingState]
-  /// is [AudioProcessingState.ready]. A true value should be broadcast whenever
+  /// Whether Call is either playing, or will play as soon as [processingState]
+  /// is [CallProcessingState.ready]. A true value should be broadcast whenever
   /// it would be appropriate for UIs to display a pause or stop button.
   ///
   /// Since [playing] and [processingState] can vary independently, it is
-  /// possible distinguish a particular audio processing state while audio is
+  /// possible distinguish a particular Call processing state while Call is
   /// playing vs paused. For example, when buffering occurs during a seek, the
-  /// [processingState] can be [AudioProcessingState.buffering], but alongside
+  /// [processingState] can be [CallProcessingState.buffering], but alongside
   /// that [playing] can be true to indicate that the seek was performed while
   /// playing, or false to indicate that the seek was performed while paused.
   final bool playing;
@@ -114,21 +113,21 @@ class PlaybackState {
   ///
   /// When enabling the seek bar, also note that some Android devices will not
   /// render the seek bar correctly unless your
-  /// [AudioServiceConfig.androidNotificationIcon] is a monochrome white icon on
-  /// a transparent background, and your [AudioServiceConfig.notificationColor]
+  /// [CallServiceConfig.androidNotificationIcon] is a monochrome white icon on
+  /// a transparent background, and your [CallServiceConfig.notificationColor]
   /// is a non-transparent color.
   final Set<MediaAction> systemActions;
 
-  /// The error code when [processingState] is [AudioProcessingState.error].
+  /// The error code when [processingState] is [CallProcessingState.error].
   final int errorCode;
 
-  /// The error message when [processingState] is [AudioProcessingState.error].
+  /// The error message when [processingState] is [CallProcessingState.error].
   final String errorMessage;
 
   /// Creates a [PlaybackState] with given field values, and with [updateTime]
   /// defaulting to [DateTime.now()].
   PlaybackState({
-    this.processingState = AudioProcessingState.idle,
+    this.processingState = CallProcessingState.idle,
     this.playing = false,
     this.controls = const [],
     this.androidCompactActionIndices,
@@ -143,9 +142,9 @@ class PlaybackState {
   /// with [updateTime] set to [DateTime.now()], and unless otherwise replaced,
   /// with [updatePosition] set to [this.position]. [errorCode] and
   /// [errorMessage] will be set to null unless [processingState] is
-  /// [AudioProcessingState.error].
+  /// [CallProcessingState.error].
   PlaybackState copyWith({
-    AudioProcessingState processingState,
+    CallProcessingState processingState,
     bool playing,
     List<MediaControl> controls,
     List<int> androidCompactActionIndices,
@@ -161,10 +160,10 @@ class PlaybackState {
       androidCompactActionIndices:
       androidCompactActionIndices ?? this.androidCompactActionIndices,
       systemActions: systemActions ?? this.systemActions,
-      errorCode: processingState != AudioProcessingState.error
+      errorCode: processingState != CallProcessingState.error
           ? null
           : (errorCode ?? this.errorCode),
-      errorMessage: processingState != AudioProcessingState.error
+      errorMessage: processingState != CallProcessingState.error
           ? null
           : (errorMessage ?? this.errorMessage),
     );
@@ -172,7 +171,7 @@ class PlaybackState {
 
   PlaybackStateMessage _toMessage() => PlaybackStateMessage(
     processingState:
-    AudioProcessingStateMessage.values[processingState.index],
+    CallProcessingStateMessage.values[processingState.index],
     playing: playing,
     controls: controls.map((control) => control._toMessage()).toList(),
     androidCompactActionIndices: androidCompactActionIndices,
@@ -294,8 +293,8 @@ class Rating {
       type: RatingStyleMessage.values[_type.index], value: _value);
 }
 
-/// Metadata about an audio item that can be played, or a folder containing
-/// audio items.
+/// Metadata about an Call item that can be played, or a folder containing
+/// Call items.
 class MediaItem {
   /// A unique id.
   final String id;
@@ -395,7 +394,7 @@ class MediaItem {
 
 /// A button to appear in the Android notification, lock screen, Android smart
 /// watch, or Android Auto device. The set of buttons you would like to display
-/// at any given moment should be streamed via [AudioHandler.playbackState].
+/// at any given moment should be streamed via [CallHandler.playbackState].
 ///
 /// Each [MediaControl] button controls a specified [MediaAction]. Only the
 /// following actions can be represented as buttons:
@@ -429,21 +428,21 @@ class MediaItem {
 class MediaControl {
   /// A default control for [MediaAction.stop].
   static final stop = MediaControl(
-    androidIcon: 'drawable/audio_service_stop',
+    androidIcon: 'drawable/Call_service_stop',
     label: 'stop',
     action: MediaAction.stop,
   );
 
   /// A default control for [MediaAction.pause].
   static final pause = MediaControl(
-    androidIcon: 'drawable/audio_service_pause',
+    androidIcon: 'drawable/Call_service_pause',
     label: 'Pause',
     action: MediaAction.pause,
   );
 
   /// A default control for [MediaAction.play].
   static final play = MediaControl(
-    androidIcon: 'drawable/audio_service_play_arrow',
+    androidIcon: 'drawable/Call_service_play_arrow',
     label: 'Play',
     action: MediaAction.play,
   );
@@ -471,16 +470,16 @@ class MediaControl {
   );
 }
 
-/// Provides an API to manage the app's [AudioHandler]. An app must call [init]
-/// during initialisation to register the [AudioHandler] that will service all
-/// requests to play audio.
-class AudioService {
+/// Provides an API to manage the app's [CallHandler]. An app must call [init]
+/// during initialisation to register the [CallHandler] that will service all
+/// requests to play Call.
+class CallService {
   /// The cache to use when loading artwork. Defaults to [DefaultCacheManager].
   static BaseCacheManager get cacheManager => _cacheManager;
   static BaseCacheManager _cacheManager;
 
   static  CallServiceConfig _config;
-  static  AudioHandler _handler;
+  static  CallHandler _handler;
 
   /// The current configuration.
   static CallServiceConfig get config => _config;
@@ -502,30 +501,30 @@ class AudioService {
 
   static ReceivePort _customActionReceivePort;
 
-  /// Connect to the [AudioHandler] from another isolate. The [AudioHandler]
+  /// Connect to the [CallHandler] from another isolate. The [CallHandler]
   /// must have been initialised via [init] prior to connecting.
-  static Future<AudioHandler> connectFromIsolate() async {
+  static Future<CallHandler> connectFromIsolate() async {
     WidgetsFlutterBinding.ensureInitialized();
-    return _IsolateAudioHandler();
+    return _IsolateCallHandler();
   }
 
-  /// Register the app's [AudioHandler] with configuration options. This must be
+  /// Register the app's [CallHandler] with configuration options. This must be
   /// called during the app's initialisation so that it is prepared to handle
-  /// audio requests immediately after a cold restart (e.g. if the user clicks
+  /// Call requests immediately after a cold restart (e.g. if the user clicks
   /// on the play button in the media notification while your app is not running
   /// and your app needs to be woken up).
   ///
   /// You may optionally specify a [cacheManager] to use when loading artwork to
   /// display in the media notification and lock screen. This defaults to
   /// [DefaultCacheManager].
-  static Future<T> init<T extends AudioHandler>({
+  static Future<T> init<T extends CallHandler>({
     @required T builder(),
     CallServiceConfig config,
     BaseCacheManager cacheManager,
   }) async {
     assert(_cacheManager == null);
     config ??= CallServiceConfig();
-    print("### AudioService.init");
+    print("### CallService.init");
     WidgetsFlutterBinding.ensureInitialized();
     _cacheManager = (cacheManager ??= DefaultCacheManager());
     await _platform.configure(ConfigureRequest(config: config._toMessage()));
@@ -656,12 +655,12 @@ class AudioService {
 
   /// Stops the service.
   static Future<void> _stop() async {
-    final audioSession = await AudioSession.instance;
+    /*final CallSession = await CallSession.instance;
     try {
-      await audioSession.setActive(false);
+      await CallSession.setActive(false);
     } catch (e) {
-      print("While deactivating audio session: $e");
-    }
+      print("While deactivating Call session: $e");
+    }*/
     await _platform.stopService(StopServiceRequest());
   }
 
@@ -686,101 +685,18 @@ class AudioService {
     } catch (e) {}
     return null;
   }
-
-  // DEPRECATED members
-
-  /// Deprecated. Use [AudioHandler.playbackState] instead.
-  @deprecated
-  static ValueStream<PlaybackState> get playbackStateStream =>
-      _handler.playbackState;
-
-  /// Deprecated. Use [AudioHandler.playbackState.value] instead.
-  @deprecated
-  static PlaybackState get playbackState =>
-      _handler.playbackState.value ?? PlaybackState();
-
-  /// Deprecated. Use [AudioHandler.mediaItem] instead.
-  @deprecated
-  static ValueStream<MediaItem> get currentMediaItemStream =>
-      _handler.mediaItem;
-
-  /// Deprecated. Use [AudioHandler.mediaItem.value] instead.
-  @deprecated
-  static MediaItem get currentMediaItem => _handler.mediaItem.value;
-
-  /// Deprecated. Use [AudioHandler.customEvent] instead.
-  @deprecated
-  static Stream<dynamic> get customEventStream => _handler.customEvent;
-
-  /// Deprecated. Use [AudioHandler.playbackState] instead.
-  @deprecated
-  static ValueStream<bool> get runningStream => playbackStateStream
-      .map((state) => state.processingState != AudioProcessingState.idle)
-  as ValueStream<bool>;
-
-  /// Deprecated. Use [AudioHandler.playbackState.value.processingState] instead.
-  @deprecated
-  static bool get running => runningStream.value ?? false;
-
-  /// Deprecated. Use [AudioHandler.updateMediaItem] instead.
-  @deprecated
-  static final updateMediaItem = _handler.updateMediaItem;
-
-  /// Deprecated. Use [AudioHandler.click] instead.
-  @deprecated
-  static final Future<void> Function([MediaButton]) click = _handler.click;
-
-  /// Deprecated. Use [AudioHandler.prepare] instead.
-  @deprecated
-  static final prepare = _handler.prepare;
-
-  /// Deprecated. Use [AudioHandler.prepareFromMediaId] instead.
-  @deprecated
-  static final Future<void> Function(String, [Map<String, dynamic>])
-  prepareFromMediaId = _handler.prepareFromMediaId;
-
-  /// Deprecated. Use [AudioHandler.play] instead.
-  @deprecated
-  static final play = _handler.play;
-
-  /// Deprecated. Use [AudioHandler.playFromMediaId] instead.
-  @deprecated
-  static final Future<void> Function(String, [Map<String, dynamic>])
-  playFromMediaId = _handler.playFromMediaId;
-
-  /// Deprecated. Use [AudioHandler.playMediaItem] instead.
-  @deprecated
-  static final playMediaItem = _handler.playMediaItem;
-
-  /// Deprecated. Use [AudioHandler.pause] instead.
-  @deprecated
-  static final pause = _handler.pause;
-
-  /// Deprecated. Use [AudioHandler.stop] instead.
-  @deprecated
-  static final stop = _handler.stop;
-
-  /// Deprecated. Use [AudioHandler.setRating] instead.
-  @deprecated
-  static final Future<void> Function(Rating, Map<dynamic, dynamic>) setRating =
-      _handler.setRating;
-
-  /// Deprecated. Use [AudioHandler.customAction] instead.
-  @deprecated
-  static final Future<dynamic> Function(String, Map<String, dynamic>)
-  customAction = _handler.customAction;
 }
 
-/// An [AudioHandler] plays audio, provides state updates and query results to
+/// An [CallHandler] plays Call, provides state updates and query results to
 /// clients. It implements standard protocols that allow it to be remotely
 /// controlled by the lock screen, media notifications, the iOS control center,
-/// headsets, smart watches, car audio systems, and other compatible agents.
+/// headsets, smart watches, car Call systems, and other compatible agents.
 ///
 /// This class cannot be subclassed directly. Implementations should subclass
-/// [BaseAudioHandler], and composite behaviours should be defined as subclasses
-/// of [CompositeAudioHandler].
-abstract class AudioHandler {
-  AudioHandler._();
+/// [BaseCallHandler], and composite behaviours should be defined as subclasses
+/// of [CompositeCallHandler].
+abstract class CallHandler {
+  CallHandler._();
 
   /// Prepare media items for playback.
   Future<void> prepare();
@@ -848,9 +764,9 @@ abstract class AudioHandler {
   ValueStream<dynamic> get customState;
 }
 
-/// A [SwitchAudioHandler] wraps another [AudioHandler] that may be switched for
+/// A [SwitchCallHandler] wraps another [CallHandler] that may be switched for
 /// another at any time by setting [inner].
-class SwitchAudioHandler extends CompositeAudioHandler {
+class SwitchCallHandler extends CompositeCallHandler {
   @override
   // ignore: close_sinks
   final BehaviorSubject<PlaybackState> playbackState = BehaviorSubject();
@@ -882,15 +798,15 @@ class SwitchAudioHandler extends CompositeAudioHandler {
   StreamSubscription<dynamic> customEventSubscription;
   StreamSubscription<dynamic> customStateSubscription;
 
-  SwitchAudioHandler(AudioHandler inner) : super(inner) {
+  SwitchCallHandler(CallHandler inner) : super(inner) {
     this.inner = inner;
   }
 
-  /// The current inner [AudioHandler] that this [SwitchAudioHandler] will
+  /// The current inner [CallHandler] that this [SwitchCallHandler] will
   /// delegate to.
-  AudioHandler get inner => _inner;
+  CallHandler get inner => _inner;
 
-  set inner(AudioHandler newInner) {
+  set inner(CallHandler newInner) {
     // Should disallow all ancestors...
     assert(newInner != this);
     playbackStateSubscription?.cancel();
@@ -912,15 +828,15 @@ class SwitchAudioHandler extends CompositeAudioHandler {
   }
 }
 
-/// A [CompositeAudioHandler] wraps another [AudioHandler] and adds additional
+/// A [CompositeCallHandler] wraps another [CallHandler] and adds additional
 /// behaviour to it. Each method will by default pass through to the
 /// corresponding method of the wrapped handler. If you override a method, it
 /// must call super in addition to any "additional" functionality you add.
-class CompositeAudioHandler extends AudioHandler {
-  AudioHandler _inner;
+class CompositeCallHandler extends CallHandler {
+  CallHandler _inner;
 
-  /// Create the [CompositeAudioHandler] with the given wrapped handler.
-  CompositeAudioHandler(AudioHandler inner)
+  /// Create the [CompositeCallHandler] with the given wrapped handler.
+  CompositeCallHandler(CallHandler inner)
       : _inner = inner,
         super._();
 
@@ -1024,7 +940,7 @@ class _IsolateRequest {
 
 const _isolatePortName = 'com.ryanheise.audioservice.port';
 
-class _IsolateAudioHandler extends AudioHandler {
+class _IsolateCallHandler extends CallHandler {
 
   @override
   // ignore: close_sinks
@@ -1061,7 +977,7 @@ class _IsolateAudioHandler extends AudioHandler {
   // ignore: close_sinks
   final BehaviorSubject<dynamic> customState = BehaviorSubject();
 
-  _IsolateAudioHandler() : super._() {
+  _IsolateCallHandler() : super._() {
     _platform.setClientCallbacks(_ClientCallbacks(this));
   }
 
@@ -1128,7 +1044,7 @@ class _IsolateAudioHandler extends AudioHandler {
   }
 }
 
-/// Base class for implementations of [AudioHandler]. It provides default
+/// Base class for implementations of [CallHandler]. It provides default
 /// implementations of all methods and provides controllers for emitting stream
 /// events:
 ///
@@ -1150,9 +1066,9 @@ class _IsolateAudioHandler extends AudioHandler {
 ///
 /// ## Android service lifecycle and state transitions
 ///
-/// On Android, the [AudioHandler] runs inside an Android service. This allows
-/// the audio logic to continue running in the background, and also an app that
-/// had previously been terminated to wake up and resume playing audio when the
+/// On Android, the [CallHandler] runs inside an Android service. This allows
+/// the Call logic to continue running in the background, and also an app that
+/// had previously been terminated to wake up and resume playing Call when the
 /// user click on the play button in a media notification or headset.
 ///
 /// ### Foreground/background transitions
@@ -1178,8 +1094,8 @@ class _IsolateAudioHandler extends AudioHandler {
 ///
 /// If the service needs to be created when the app is not already running, your
 /// app's `main` entrypoint will be called in the background which should
-/// initialise your [AudioHandler].
-class BaseAudioHandler extends AudioHandler {
+/// initialise your [CallHandler].
+class BaseCallHandler extends CallHandler {
   /// A controller for broadcasting the current [PlaybackState] to the app's UI,
   /// media notification and other clients. Example usage:
   ///
@@ -1252,7 +1168,7 @@ class BaseAudioHandler extends AudioHandler {
   // ignore: close_sinks
   final BehaviorSubject<dynamic> customState = BehaviorSubject();
 
-  BaseAudioHandler() : super._();
+  BaseCallHandler() : super._();
 
   @override
   Future<void> prepare() async {}
@@ -1296,7 +1212,7 @@ class BaseAudioHandler extends AudioHandler {
   @override
   @mustCallSuper
   Future<void> stop() async {
-    await AudioService._stop();
+    await CallService._stop();
   }
 
   @override
@@ -1324,7 +1240,7 @@ class BaseAudioHandler extends AudioHandler {
   Stream<dynamic> get customEvent => customEventSubject.stream;
 }
 
-/// The configuration options to use when registering an [AudioHandler].
+/// The configuration options to use when registering an [CallHandler].
 class CallServiceConfig {
   final bool androidResumeOnClick;
   final String androidNotificationChannelName;
@@ -1363,12 +1279,12 @@ class CallServiceConfig {
   /// [artDownscaleWidth] must also be specified.
   final int artDownscaleHeight;
 
-  /// The interval to be used in [AudioHandler.fastForward]. This value will
+  /// The interval to be used in [CallHandler.fastForward]. This value will
   /// also be used on iOS to render the skip-forward button. This value must be
   /// positive.
   final Duration fastForwardInterval;
 
-  /// The interval to be used in [AudioHandler.rewind]. This value will also be
+  /// The interval to be used in [CallHandler.rewind]. This value will also be
   /// used on iOS to render the skip-backward button. This value must be
   /// positive.
   final Duration rewindInterval;
@@ -1423,22 +1339,22 @@ class CallServiceConfig {
 }
 
 /// Key/value codes for use in [MediaItem.extras] and
-/// [AudioServiceConfig.androidBrowsableRootExtras] to influence how Android
+/// [CallServiceConfig.androidBrowsableRootExtras] to influence how Android
 /// Auto will style browsable and playable media items.
 class AndroidContentStyle {
-  /// Set this key to `true` in [AudioServiceConfig.androidBrowsableRootExtras]
+  /// Set this key to `true` in [CallServiceConfig.androidBrowsableRootExtras]
   /// to declare that content style is supported.
   static final supportedKey = 'android.media.browse.CONTENT_STYLE_SUPPORTED';
 
   /// The key in [MediaItem.extras] and
-  /// [AudioServiceConfig.androidBrowsableRootExtras] to configure the content
+  /// [CallServiceConfig.androidBrowsableRootExtras] to configure the content
   /// style for playable items. The value can be any of the `*ItemHintValue`
   /// constants defined in this class.
   static final playableHintKey =
       'android.media.browse.CONTENT_STYLE_PLAYABLE_HINT';
 
   /// The key in [MediaItem.extras] and
-  /// [AudioServiceConfig.androidBrowsableRootExtras] to configure the content
+  /// [CallServiceConfig.androidBrowsableRootExtras] to configure the content
   /// style for browsable items. The value can be any of the `*ItemHintValue`
   /// constants defined in this class.
   static final browsableHintKey =
@@ -1458,7 +1374,7 @@ class AndroidContentStyle {
 }
 
 /// (Maybe) temporary.
-extension AudioServiceValueStream<T> on ValueStream<T> {
+extension CallServiceValueStream<T> on ValueStream<T> {
   @Deprecated('Use "this" instead. Will be removed before the release')
   ValueStream<T> get stream => this;
 }
@@ -1493,7 +1409,7 @@ abstract class AndroidPlaybackInfo {
 }
 
 class RemoteAndroidPlaybackInfo extends AndroidPlaybackInfo {
-  //final AndroidAudioAttributes audioAttributes;
+  //final AndroidCallAttributes CallAttributes;
   final AndroidVolumeControlType volumeControlType;
   final int maxVolume;
   final int volume;
@@ -1530,112 +1446,8 @@ class LocalAndroidPlaybackInfo extends AndroidPlaybackInfo {
       LocalAndroidPlaybackInfoMessage();
 }
 
-@deprecated
-class AudioServiceBackground {
-  static BaseAudioHandler get _handler =>
-      AudioService._handler as BaseAudioHandler;
-
-  /// The current media item.
-  ///
-  /// This is the value most recently set via [setMediaItem].
-  static PlaybackState get state =>
-      _handler.playbackState.value ?? PlaybackState();
-
-  /// Broadcasts to all clients the current state, including:
-  ///
-  /// * Whether media is playing or paused
-  /// * Whether media is buffering or skipping
-  /// * The current position, buffered position and speed
-  /// * The current set of media actions that should be enabled
-  ///
-  /// Connected clients will use this information to update their UI.
-  ///
-  /// You should use [controls] to specify the set of clickable buttons that
-  /// should currently be visible in the notification in the current state,
-  /// where each button is a [MediaControl] that triggers a different
-  /// [MediaAction]. Only the following actions can be enabled as
-  /// [MediaControl]s:
-  ///
-  /// * [MediaAction.stop]
-  /// * [MediaAction.pause]
-  /// * [MediaAction.play]
-  /// * [MediaAction.rewind]
-  /// * [MediaAction.skipToPrevious]
-  /// * [MediaAction.skipToNext]
-  /// * [MediaAction.fastForward]
-  /// * [MediaAction.playPause]
-  ///
-  /// Any other action you would like to enable for clients that is not a clickable
-  /// notification button should be specified in the [systemActions] parameter. For
-  /// example:
-  ///
-  /// * [MediaAction.seekTo] (enable a seek bar)
-  /// * [MediaAction.seekForward] (enable press-and-hold fast-forward control)
-  /// * [MediaAction.seekBackward] (enable press-and-hold rewind control)
-  ///
-  /// In practice, iOS will treat all entries in [controls] and [systemActions]
-  /// in the same way since you cannot customise the icons of controls in the
-  /// Control Center. However, on Android, the distinction is important as clickable
-  /// buttons in the notification require you to specify your own icon.
-  ///
-  /// Note that specifying [MediaAction.seekTo] in [systemActions] will enable
-  /// a seek bar in both the Android notification and the iOS control center.
-  /// [MediaAction.seekForward] and [MediaAction.seekBackward] have a special
-  /// behaviour on iOS in which if you have already enabled the
-  /// [MediaAction.skipToNext] and [MediaAction.skipToPrevious] buttons, these
-  /// additional actions will allow the user to press and hold the buttons to
-  /// activate the continuous seeking behaviour.
-  ///
-  /// On Android, a media notification has a compact and expanded form. In the
-  /// compact view, you can optionally specify the indices of up to 3 of your
-  /// [controls] that you would like to be shown via [androidCompactActions].
-  ///
-  /// The playback [position] should NOT be updated continuously in real time.
-  /// Instead, it should be updated only when the normal continuity of time is
-  /// disrupted, such as during a seek, buffering and seeking. When
-  /// broadcasting such a position change, the [updateTime] specifies the time
-  /// of that change, allowing clients to project the realtime value of the
-  /// position as `position + (DateTime.now() - updateTime)`. As a convenience,
-  /// this calculation is provided by [PlaybackState.currentPosition].
-  ///
-  /// The playback [speed] is given as a double where 1.0 means normal speed.
-  static Future<void> setState({
-    List<MediaControl> controls,
-    List<MediaAction> systemActions,
-    AudioProcessingState processingState,
-    bool playing,
-    Duration position,
-    Duration bufferedPosition,
-    double speed,
-    DateTime updateTime,
-    List<int> androidCompactActions,
-  }) async {
-    _handler.playbackState.add(_handler.playbackState.value.copyWith(
-      controls: controls,
-      systemActions: systemActions?.toSet(),
-      processingState: processingState,
-      playing: playing,
-      androidCompactActionIndices: androidCompactActions,
-    ));
-  }
-
-  /// Sets the currently playing media item and notifies all clients.
-  static Future<void> setMediaItem(MediaItem mediaItem) async {
-    _handler.mediaItem.add(mediaItem);
-  }
-
-  /// Sends a custom event to the Flutter UI.
-  ///
-  /// The event parameter can contain any data permitted by Dart's
-  /// SendPort/ReceivePort API. Please consult the relevant documentation for
-  /// further information.
-  static void sendCustomEvent(dynamic event) {
-    _handler.customEventSubject.add(event);
-  }
-}
-
 class _HandlerCallbacks extends CallHandlerCallbacks {
-  final AudioHandler handler;
+  final CallHandler handler;
 
   _HandlerCallbacks(this.handler);
 
@@ -1658,7 +1470,7 @@ class _HandlerCallbacks extends CallHandlerCallbacks {
   @override
   Future<void> onNotificationClicked(
       OnNotificationClickedRequest request) async {
-    AudioService._notificationClickEvent.add(request.clicked);
+    CallService._notificationClickEvent.add(request.clicked);
   }
 
   @override
@@ -1706,7 +1518,7 @@ class _HandlerCallbacks extends CallHandlerCallbacks {
 }
 
 class _ClientCallbacks extends CallClientCallbacks {
-  final _IsolateAudioHandler handler;
+  final _IsolateCallHandler handler;
 
   _ClientCallbacks(this.handler);
 
@@ -1720,7 +1532,7 @@ class _ClientCallbacks extends CallClientCallbacks {
       OnPlaybackStateChangedRequest request) async {
     final state = request.state;
     handler.playbackState.add(PlaybackState(
-      processingState: AudioProcessingState.values[state.processingState.index],
+      processingState: CallProcessingState.values[state.processingState.index],
       playing: state.playing,
       // We can't determine whether they are controls.
       systemActions: state.systemActions
