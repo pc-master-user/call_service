@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:call_service/PlatFormInterface/MethodChannel_Call_Service.dart';
 import 'package:call_service/PlatFormInterface/Platform_Channel_Call_Service.dart';
 
 CallServicePlatform _platform = CallServicePlatform.instance;
@@ -655,11 +654,11 @@ class CallService {
 
   /// Stops the service.
   static Future<void> _stop() async {
-    /*final CallSession = await CallSession.instance;
+    /*final audioSession = await AudioSession.instance;
     try {
       await CallSession.setActive(false);
     } catch (e) {
-      print("While deactivating Call session: $e");
+      print("While deactivating audio session: $e");
     }*/
     await _platform.stopService(StopServiceRequest());
   }
@@ -938,7 +937,7 @@ class _IsolateRequest {
   _IsolateRequest(this.sendPort, this.method, [this.arguments]);
 }
 
-const _isolatePortName = 'com.ryanheise.audioservice.port';
+const _isolatePortName = 'com.clinix.call_service.port';
 
 class _IsolateCallHandler extends CallHandler {
 

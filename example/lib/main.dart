@@ -178,6 +178,7 @@ class AgoraCallHandler extends BaseCallHandler
   final BehaviorSubject<MediaItem> _recentSubject =
   BehaviorSubject<MediaItem>();
 
+
   static const appId = 'c67b893eb46f4e1380d5ae46e48dc0f5';
   RtcEngine _engine;
   String channelId= 'c6c2096f-21aa-40de-ab63-5654053d2f0b';
@@ -220,7 +221,6 @@ class AgoraCallHandler extends BaseCallHandler
     ));
     trigger(false, CallProcessingState.loading);
   }
-
   String token = '006c67b893eb46f4e1380d5ae46e48dc0f5IACywavqB61UePrUB8UrOlyVA1T8sQ+I4m1oJinxnIGP8GbxuZPYfoVVIgDLPH4CVItxYAQAAQBUi3FgAgBUi3FgAwBUi3FgBABUi3Fg';
 
   @override
@@ -228,13 +228,7 @@ class AgoraCallHandler extends BaseCallHandler
     if(_engine==null){
       await initRtcEngine();
     }
-
     ChannelMediaOptions options = ChannelMediaOptions(true, true);
-    mediaItem.add(MediaItem(
-        id: 'c6c2096f-21aa-40de-ab63-5654053d2f0b',
-        album: "Psychiatry Consult",
-        title: 'Prabhakar'
-    ));
     try {
       await _engine.enableVideo();
       await _engine.enableAudio();
@@ -245,15 +239,6 @@ class AgoraCallHandler extends BaseCallHandler
     }
   }
   static int userId=0;
-  static getLocalView() {
-    return RtcRemoteView.SurfaceView(
-      channelId: '58438b40-ccdb-4121-b805-b774527185c0',
-      onPlatformViewCreated: (int) {
-        //notifyListeners();
-      },
-    );
-    //return RtcLocalView.SurfaceView();
-  }
 
   @override
   Future<void> stop() async {
@@ -289,7 +274,6 @@ class AgoraCallHandler extends BaseCallHandler
   }
   trigger(bool isJoined, CallProcessingState state){
     playbackState.add(playbackState.value.copyWith(
-
       controls: [ MediaControl.stop,],
       playing: isJoined,
       processingState: state,

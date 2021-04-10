@@ -1,6 +1,6 @@
 package com.clinix.call_service;
 
-public enum AudioProcessingState {
+public enum CallProcessingState {
     idle,
     loading,
     buffering,

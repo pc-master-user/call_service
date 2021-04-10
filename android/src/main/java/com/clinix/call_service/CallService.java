@@ -11,46 +11,48 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
+import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.telecom.CallAudioState;
-import android.telecom.Connection;
-import android.telecom.ConnectionRequest;
-import android.telecom.ConnectionService;
-import android.telecom.DisconnectCause;
-import android.telecom.PhoneAccountHandle;
-import android.telecom.TelecomManager;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
-import static com.clinix.call_service.Constants.*;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import io.flutter.embedding.engine.FlutterEngine;
 
 import static com.clinix.call_service.Constants.EXTRA_CALLER_NAME;
 import static com.clinix.call_service.Constants.EXTRA_CALL_NUMBER;
+import static com.clinix.call_service.Constants.EXTRA_CALL_UUID;
 
 @RequiresApi(api = Build.VERSION_CODES.M)
 public class CallService extends Service {
-    private static final int NOTIFICATION_ID = 1124;
-    private static final int REQUEST_CONTENT_INTENT = 1000;
+    private static final int RING_NOTIFICATION_ID = 1068;
+    private static final int NOTIFICATION_ID = 1069;
+    private static final int REQUEST_CONTENT_INTENT = 1100;
     public static final String NOTIFICATION_CLICK_ACTION = "com.clinix.call_service.NOTIFICATION_CLICK";
+    public static final String ANSWER_CLICK_ACTION = "com.clinix.call_service.ANSWER_CLICK";
+    public static final String NOTIFICATION_CHANNEL_ID = "CallChannel";
+    public static final String ACTION_STOP_SERVICE = "STOP";
+    public static final String ACTION_DECLINE = "DECLINE";
+    public static final String ACTION_ANSWER = "ANSWER";
     private static PendingIntent contentIntent;
     private static ServiceListener listener;
     static CallService instance;
+    private CallData callData;
     private PowerManager.WakeLock wakeLock;
     private CallServiceConfig config;
     private static Boolean isAvailable;
@@ -58,11 +60,11 @@ public class CallService extends Service {
     private static Boolean isReachable;
     private static Boolean hasOutgoingCall;
     private static String notReachableCallUuid;
-    private static ConnectionRequest currentConnectionRequest;
-    private static PhoneAccountHandle phoneAccountHandle = null;
-    private String notificationChannelId;
+    final Handler handler = new Handler();
+    private String ONGOING_CHANNEL= "ONGOING CHANNEL";
+    private String RINGING_CHANNEL="RINGING CHANNEL";
     private boolean notificationCreated;
-    private AudioProcessingState processingState = AudioProcessingState.idle;
+    private CallProcessingState processingState = CallProcessingState.idle;
     private static boolean playing;
     private FlutterEngine flutterEngine;
     private static Activity currentActivity;
@@ -70,19 +72,14 @@ public class CallService extends Service {
         CallService.listener = listener;
     }
     private static String TAG = "CliniX:CallConnectionService";
-    public static Map<String, VoiceConnection> currentConnections = new HashMap<>();
-    public static Connection getConnection(String connectionId) {
-        if (currentConnections.containsKey(connectionId)) {
-            return currentConnections.get(connectionId);
-        }
-        return null;
-    }
 
     public void configure(CallServiceConfig config) {
         this.config = config;
     }
 
     public void stop(){
+        stopForeground(true);
+        releaseWakeLock();
         stopSelf();
     }
     @Override
@@ -108,7 +105,6 @@ public class CallService extends Service {
     public void onCreate() {
         super.onCreate();
         instance = this;
-        notificationChannelId = getApplication().getPackageName() + ".channel";
         config = new CallServiceConfig(getApplicationContext());
         if (config.activityClassName != null) {
             Context context = getApplicationContext();
@@ -122,7 +118,7 @@ public class CallService extends Service {
         }
         notificationCreated = false;
         playing = false;
-        processingState = AudioProcessingState.idle;
+        processingState = CallProcessingState.idle;
         PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, CallService.class.getName());
         flutterEngine = CallServicePlugin.getFlutterEngine(this);
@@ -131,64 +127,146 @@ public class CallService extends Service {
 
     @Override
     public int onStartCommand(final Intent intent, int flags, int startId) {
-        System.out.println("### onStartCommand");
-        acquireWakeLock();
-        //internalStartForeground();
-        startForeground(NOTIFICATION_ID, buildNotification());
-        notificationCreated = true;
+        if(intent.getAction()==null){
+            System.out.println("### onStartCommand");
+            acquireWakeLock();
+            return START_NOT_STICKY;
+        }else if(intent.getAction()== ACTION_STOP_SERVICE){
+            handleStop();
+            //stopSelf();
+        }else if(intent.getAction()== ACTION_DECLINE){
+            stop();
+            updateNotification();
+            //stopSelf();
+        }else if(intent.getAction()== ACTION_ANSWER){
+            //boolean isRunning= isActivityRunning();
+            /*Intent focusIntent = new Intent((String)null);
+            focusIntent.setComponent(new ComponentName(getApplicationContext(), config.activityClassName));
+            //Intent intent = new Intent(context, config.activityClassName);
+            focusIntent.setAction(ANSWER_CLICK_ACTION);
+            focusIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            getApplicationContext().startActivity(focusIntent);*/
+            handlePlay();
+            updateNotification();
+            //stopSelf();
+        }
         return START_NOT_STICKY;
     }
 
-    private Connection createConnection(ConnectionRequest request) {
-        Bundle extras = request.getExtras();
-        HashMap<String, String> extrasMap = this.bundleToMap(extras);
-        extrasMap.put(EXTRA_CALL_NUMBER, request.getAddress().toString());
-        VoiceConnection connection = new VoiceConnection(this, extrasMap);
-        connection.setConnectionCapabilities(Connection.CAPABILITY_MUTE | Connection.CAPABILITY_SUPPORT_HOLD);
-        connection.setInitializing();
-        connection.setExtras(extras);
-        currentConnections.put(extras.getString(EXTRA_CALL_UUID), connection);
-        return connection;
-    }
     private Notification buildNotification() {
-        NotificationCompat.Builder builder = getNotificationBuilder();
-        if (config.notificationColor != -1)
-            builder.setColor(config.notificationColor);
-        builder.setUsesChronometer(true);
-        builder.setCategory(Notification.CATEGORY_CALL);
+        NotificationCompat.Builder builder = getNotificationBuilder()
+                .setSmallIcon(getNotificationIcon("app_icon"))
+                .setColor(config.notificationColor)
+                .setContentTitle(this.callData.description)
+                .setContentText(this.callData.callerName)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setContentIntent(contentIntent)
+                .setUsesChronometer(true)
+                .setOngoing(true);
+        Intent stopSelf = new Intent(this, CallService.class);
+        stopSelf.setAction(ACTION_STOP_SERVICE);
+        PendingIntent pStopSelf = PendingIntent
+                .getService(this, 0, stopSelf, PendingIntent.FLAG_CANCEL_CURRENT);
         builder.addAction(getNotificationIcon("stop_icon"),
-                "Hang UP",
-                buildStopPendingIntent());
-        builder.setOngoing(true);
-        //builder.setStyle(style);
-        Notification notification = builder.build();
-        return notification;
+                "HangUp",
+                pStopSelf);
+        builder.setSubText("consult");
+        return  builder.build();
     }
+
+    private void startRingNotification() {
+        NotificationCompat.Builder builder = getHighNotificationBuilder()
+                .setSmallIcon(getNotificationIcon("app_icon"))
+                .setColor(config.notificationColor)
+                .setContentTitle(this.callData.description)
+                .setContentText(this.callData.callerName)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setContentIntent(contentIntent)
+                .setUsesChronometer(true)
+                .setOngoing(true)
+                .setFullScreenIntent(contentIntent,true)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setTimeoutAfter(40000L).setAutoCancel(true);
+        Intent stopSelf = new Intent(this, CallService.class);
+        stopSelf.setAction(ACTION_DECLINE);
+        PendingIntent pStopSelf = PendingIntent
+                .getService(this, 0, stopSelf, PendingIntent.FLAG_CANCEL_CURRENT);
+        builder.addAction(getNotificationIcon("stop_icon"),
+                "Decline",
+                pStopSelf);
+        Intent answer = new Intent(this, CallService.class);
+        answer.setAction(ACTION_ANSWER);
+        PendingIntent pAnswer = PendingIntent
+                .getService(this, 0, answer, PendingIntent.FLAG_CANCEL_CURRENT);
+        builder.addAction(getNotificationIcon("stop_icon"),
+                "Answer",
+                pAnswer);
+        builder.setSubText("consult");
+        Notification notification= builder.build();
+        NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(RING_NOTIFICATION_ID,notification);
+        //notification.flags = notification.flags |= Notification.FLAG_INSISTENT;
+    }
+
     private NotificationCompat.Builder getNotificationBuilder() {
         NotificationCompat.Builder notificationBuilder = null;
         if (notificationBuilder == null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 createChannel();
             int iconId = getResourceId(config.androidNotificationIcon);
-            notificationBuilder = new NotificationCompat.Builder(this, notificationChannelId)
+            notificationBuilder = new NotificationCompat.Builder(this, ONGOING_CHANNEL)
                     .setSmallIcon(iconId)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setShowWhen(false)
-                    .setDeleteIntent(buildDeletePendingIntent())
-            ;
+                    .setDeleteIntent(buildDeletePendingIntent());
         }
         return notificationBuilder;
     }
+
     @RequiresApi(Build.VERSION_CODES.O)
     private void createChannel() {
         NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        NotificationChannel channel = notificationManager.getNotificationChannel(notificationChannelId);
+        NotificationChannel channel = notificationManager.getNotificationChannel(ONGOING_CHANNEL);
         if (channel == null) {
-            channel = new NotificationChannel(notificationChannelId, config.androidNotificationChannelName, NotificationManager.IMPORTANCE_LOW);
+            channel = new NotificationChannel(ONGOING_CHANNEL, config.androidNotificationChannelName, NotificationManager.IMPORTANCE_LOW);
             channel.setShowBadge(config.androidShowNotificationBadge);
             if (config.androidNotificationChannelDescription != null)
                 channel.setDescription(config.androidNotificationChannelDescription);
             notificationManager.createNotificationChannel(channel);
+        }
+    }
+
+    private NotificationCompat.Builder getHighNotificationBuilder() {
+        NotificationCompat.Builder notificationBuilder = null;
+        if (notificationBuilder == null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                createHighChannel();
+            int iconId = getResourceId(config.androidNotificationIcon);
+            notificationBuilder = new NotificationCompat.Builder(this, RINGING_CHANNEL)
+                    .setSmallIcon(iconId)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setShowWhen(false)
+                    .setDeleteIntent(buildDeletePendingIntent());
+        }
+        return notificationBuilder;
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private void createHighChannel() {
+        Uri uri= RingtoneManager.getActualDefaultRingtoneUri(this.getApplicationContext(), RingtoneManager.TYPE_RINGTONE);
+        NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationChannel channel = notificationManager.getNotificationChannel(RINGING_CHANNEL);
+        if (channel == null) {
+            channel = new NotificationChannel(RINGING_CHANNEL, "Call Ringing", NotificationManager.IMPORTANCE_HIGH);
+            channel.setShowBadge(config.androidShowNotificationBadge);
+            if (config.androidNotificationChannelDescription != null)
+                channel.setDescription(config.androidNotificationChannelDescription);
+            notificationManager.createNotificationChannel(channel);
+            AudioAttributes att = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build();
+            channel.setSound(uri,att);
         }
     }
 
@@ -212,163 +290,65 @@ public class CallService extends Service {
         if (listener == null) return;
         listener.onStop();
     }
-
-    public static void setAvailable(Boolean value) {
-        Log.d(TAG, "setAvailable: " + (value ? "true" : "false"));
-        if (value) {
-            isInitialized = true;
-        }
-
-        isAvailable = value;
-    }
-
-    public static void setReachable() {
-        Log.d(TAG, "setReachable");
-        isReachable = true;
-        instance.currentConnectionRequest = null;
+    public void handlePlay() {
+        if (listener == null) return;
+        listener.onPlay();
     }
 
     int getResourceId(String resource) {
         String[] parts = resource.split("/");
         String resourceType = parts[0];
         String resourceName = parts[1];
-        return getResources().getIdentifier(resourceName, resourceType, "audio_service");
+        return getResources().getIdentifier(resourceName, resourceType, "Call_service");
     }
 
-    public static void deinitConnection(String connectionId) {
-        Log.d(TAG, "deinitConnection:" + connectionId);
-        instance.hasOutgoingCall = false;
-
-        if (currentConnections.containsKey(connectionId)) {
-            currentConnections.remove(connectionId);
+    void setState(CallProcessingState processingState, boolean playing, Integer errorCode, String errorMessage) {
+        boolean wasPlaying = this.playing;
+        CallProcessingState oldProcessingState = this.processingState;
+        this.processingState = processingState;
+        this.playing = playing;
+        if (!wasPlaying && playing) {
+            enterPlayingState();
+        } else if (wasPlaying && !playing) {
+            exitPlayingState();
         }
+        if (oldProcessingState != CallProcessingState.idle && processingState == CallProcessingState.idle) {
+            // TODO: Handle completed state as well?
+            stop();
+        }
+        /*if(processingState == CallProcessingState.loading){
+            enterRingingState();
+        }*/
+        //updateNotification();
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
-    public class VoiceConnection extends Connection {
-        private boolean isMuted = false;
-        private HashMap<String, String> handle;
-        private Context context;
-        private static final String TAG = "RNCK:VoiceConnection";
+    private boolean enterPlayingState() {
+        acquireWakeLock();
+        startService(new Intent(CallService.this, CallService.class));
+        startForeground(NOTIFICATION_ID, buildNotification());
+        notificationCreated = true;
+        return true;
+    }
 
-        VoiceConnection(Context context, HashMap<String, String> handle) {
-            super();
-            this.handle = handle;
-            this.context = context;
+    private boolean enterRingingState() {
+        acquireWakeLock();
+        startService(new Intent(CallService.this, CallService.class));
+        startRingNotification();
+        //startForeground(RING_NOTIFICATION_ID, buildRingNotification());
+        notificationCreated = true;
+        return true;
+    }
 
-            String number = handle.get(EXTRA_CALL_NUMBER);
-            String name = handle.get(EXTRA_CALLER_NAME);
+    private void exitPlayingState() {
+        stopForeground(false);
+        releaseWakeLock();
+    }
 
-            if (number != null) {
-                setAddress(Uri.parse(number), TelecomManager.PRESENTATION_ALLOWED);
-            }
-            if (name != null && !name.equals("")) {
-                setCallerDisplayName(name, TelecomManager.PRESENTATION_ALLOWED);
-            }
-        }
-
-        @Override
-        public void onExtrasChanged(Bundle extras) {
-            super.onExtrasChanged(extras);
-            HashMap attributeMap = (HashMap<String, String>)extras.getSerializable("attributeMap");
-            if (attributeMap != null) {
-                handle = attributeMap;
-            }
-        }
-
-        @Override
-        public void onCallAudioStateChanged(CallAudioState state) {
-            if (state.isMuted() == this.isMuted) {
-                return;
-            }
-
-            this.isMuted = state.isMuted();
-            //sendCallRequestToActivity(isMuted ? ACTION_MUTE_CALL : ACTION_UNMUTE_CALL, handle);
-        }
-
-        @Override
-        public void onAnswer() {
-            super.onAnswer();
-            Log.d(TAG, "onAnswer called");
-
-            setConnectionCapabilities(getConnectionCapabilities() | Connection.CAPABILITY_HOLD);
-            setAudioModeIsVoip(true);
-
-            //sendCallRequestToActivity(ACTION_ANSWER_CALL, handle);
-            //sendCallRequestToActivity(ACTION_AUDIO_SESSION, handle);
-            Log.d(TAG, "onAnswer executed");
-        }
-
-        @Override
-        public void onDisconnect() {
-            super.onDisconnect();
-            setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
-            listener.onStop();
-            //sendCallRequestToActivity(ACTION_END_CALL, handle);
-            Log.d(TAG, "onDisconnect executed");
-            try {
-                ((CallService) context).deinitConnection(handle.get(EXTRA_CALL_UUID));
-            } catch(Throwable exception) {
-                Log.e(TAG, "Handle map error", exception);
-            }
-            destroy();
-        }
-
-        public void reportDisconnect(int reason) {
-            super.onDisconnect();
-            switch (reason) {
-                case 1:
-                    setDisconnected(new DisconnectCause(DisconnectCause.ERROR));
-                    break;
-                case 2:
-                case 5:
-                    setDisconnected(new DisconnectCause(DisconnectCause.REMOTE));
-                    break;
-                case 3:
-                    setDisconnected(new DisconnectCause(DisconnectCause.BUSY));
-                    break;
-                case 4:
-                    setDisconnected(new DisconnectCause(DisconnectCause.ANSWERED_ELSEWHERE));
-                    break;
-                case 6:
-                    setDisconnected(new DisconnectCause(DisconnectCause.MISSED));
-                    break;
-                default:
-                    break;
-            }
-            ((CallService)context).deinitConnection(handle.get(EXTRA_CALL_UUID));
-            destroy();
-        }
-
-        @Override
-        public void onAbort() {
-            super.onAbort();
-            setDisconnected(new DisconnectCause(DisconnectCause.REJECTED));
-            //sendCallRequestToActivity(ACTION_END_CALL, handle);
-            listener.onStop();
-            Log.d(TAG, "onAbort executed");
-            try {
-                ((CallService) context).deinitConnection(handle.get(EXTRA_CALL_UUID));
-            } catch(Throwable exception) {
-                Log.e(TAG, "Handle map error", exception);
-            }
-            destroy();
-        }
-
-        @Override
-        public void onReject() {
-            super.onReject();
-            setDisconnected(new DisconnectCause(DisconnectCause.REJECTED));
-            //sendCallRequestToActivity(ACTION_END_CALL, handle);
-            listener.onStop();
-            Log.d(TAG, "onReject executed");
-            try {
-                ((CallService) context).deinitConnection(handle.get(EXTRA_CALL_UUID));
-            } catch(Throwable exception) {
-                Log.e(TAG, "Handle map error", exception);
-            }
-            destroy();
-        }
+    private void updateNotification() {
+        if (!notificationCreated) return;
+        NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(RING_NOTIFICATION_ID);
+        //notificationManager.notify(NOTIFICATION_ID, buildNotification());
     }
 
     public static interface ServiceListener {
@@ -390,22 +370,7 @@ public class CallService extends Service {
 
         void onDestroy();
     }
-    /**
-     * https://stackoverflow.com/questions/5446565/android-how-do-i-check-if-activity-is-running
-     *
-     * @param context Context
-     * @return boolean
-     */
-    public static boolean isRunning(Context context) {
-        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningTaskInfo> tasks = activityManager.getRunningTasks(Integer.MAX_VALUE);
 
-        for (ActivityManager.RunningTaskInfo task : tasks) {
-            if (context.getPackageName().equalsIgnoreCase(task.baseActivity.getPackageName()))
-                return true;
-        }
-        return false;
-    }
     private void acquireWakeLock() {
         if (!wakeLock.isHeld())
             wakeLock.acquire();
@@ -415,10 +380,16 @@ public class CallService extends Service {
         if (wakeLock.isHeld())
             wakeLock.release();
     }
+
+    public void setCallData(CallData callData){
+        this.callData= callData;
+    }
+
     private int getNotificationIcon(String iconName) {
         int resourceId = getApplicationContext().getResources().getIdentifier(iconName, "drawable", getApplicationContext().getPackageName());
         return resourceId;
     }
+
     private HashMap<String, String> bundleToMap(Bundle extras) {
         HashMap<String, String> extrasMap = new HashMap<>();
         Set<String> keySet = extras.keySet();
@@ -431,5 +402,14 @@ public class CallService extends Service {
             }
         }
         return extrasMap;
+    }
+    public boolean isActivityRunning() {
+        ActivityManager activityManager = (ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningTaskInfo> tasks = activityManager.getRunningTasks(Integer.MAX_VALUE);
+        for (ActivityManager.RunningTaskInfo task : tasks) {
+            if (config.activityClassName.equalsIgnoreCase(task.baseActivity.getClassName()))
+                return true;
+        }
+        return false;
     }
 }
