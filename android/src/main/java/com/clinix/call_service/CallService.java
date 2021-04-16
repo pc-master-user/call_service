@@ -340,7 +340,7 @@ public class CallService extends Service {
     }
 
     private void exitPlayingState() {
-        stopForeground(false);
+        stopForeground(true);
         releaseWakeLock();
     }
 
