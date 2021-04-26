@@ -60,6 +60,7 @@ public class CallService extends Service {
     static CallService instance;
     private CallData callData;
     private PowerManager.WakeLock wakeLock;
+    private PowerManager.WakeLock pWakeLock;
     private CallServiceConfig config;
     private static Boolean isAvailable;
     private static Boolean isInitialized;
@@ -131,7 +132,8 @@ public class CallService extends Service {
         playing = false;
         processingState = CallProcessingState.idle;
         PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK|PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, CallService.class.getName());
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK , CallService.class.getName());
+        pWakeLock= pm.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, CallService.class.getName());
         flutterEngine = CallServicePlugin.getFlutterEngine(this);
         /*sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         proximity = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);*/
@@ -314,13 +316,21 @@ public class CallService extends Service {
     }
 
     private void acquireWakeLock() {
-        if (!wakeLock.isHeld())
+        if (!wakeLock.isHeld()){
             wakeLock.acquire();
+        }
+        if(!pWakeLock.isHeld()){
+            pWakeLock.acquire();;
+        }
     }
 
     private void releaseWakeLock() {
-        if (wakeLock.isHeld())
+        if (wakeLock.isHeld()){
             wakeLock.release();
+        }
+        if(pWakeLock.isHeld()){
+            pWakeLock.release();;
+        }
     }
 
     public void setCallData(CallData callData){
