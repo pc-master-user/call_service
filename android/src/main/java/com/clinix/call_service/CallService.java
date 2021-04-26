@@ -8,10 +8,15 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -49,6 +54,7 @@ public class CallService extends Service {
     public static final String ACTION_STOP_SERVICE = "STOP";
     public static final String ACTION_DECLINE = "DECLINE";
     public static final String ACTION_ANSWER = "ANSWER";
+    private static final int SENSOR_SENSITIVITY = 4;
     private static PendingIntent contentIntent;
     private static ServiceListener listener;
     static CallService instance;
@@ -72,12 +78,15 @@ public class CallService extends Service {
         CallService.listener = listener;
     }
     private static String TAG = "CliniX:CallConnectionService";
+    /*private SensorManager sensorManager;
+    private Sensor proximity;*/
 
     public void configure(CallServiceConfig config) {
         this.config = config;
     }
 
     public void stop(){
+        //sensorManager.unregisterListener(this);
         stopForeground(true);
         releaseWakeLock();
         stopSelf();
@@ -88,6 +97,8 @@ public class CallService extends Service {
         super.onDestroy();
         listener.onDestroy();
         listener = null;
+        /*proximity= null;
+        sensorManager=null;*/
         stopForeground(true);
         releaseWakeLock();
         instance = null;
@@ -120,8 +131,10 @@ public class CallService extends Service {
         playing = false;
         processingState = CallProcessingState.idle;
         PowerManager pm = (PowerManager)getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, CallService.class.getName());
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK|PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, CallService.class.getName());
         flutterEngine = CallServicePlugin.getFlutterEngine(this);
+        /*sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        proximity = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);*/
         System.out.println("flutterEngine warmed up");
     }
 
@@ -130,22 +143,16 @@ public class CallService extends Service {
         if(intent.getAction()==null){
             System.out.println("### onStartCommand");
             acquireWakeLock();
+            //sensorManager.registerListener(this, proximity,SensorManager.SENSOR_DELAY_NORMAL);
             return START_NOT_STICKY;
-        }else if(intent.getAction()== ACTION_STOP_SERVICE){
+        }else if(intent.getAction() == ACTION_STOP_SERVICE){
             handleStop();
             //stopSelf();
-        }else if(intent.getAction()== ACTION_DECLINE){
+        }else if(intent.getAction() == ACTION_DECLINE){
             stop();
             updateNotification();
             //stopSelf();
-        }else if(intent.getAction()== ACTION_ANSWER){
-            //boolean isRunning= isActivityRunning();
-            /*Intent focusIntent = new Intent((String)null);
-            focusIntent.setComponent(new ComponentName(getApplicationContext(), config.activityClassName));
-            //Intent intent = new Intent(context, config.activityClassName);
-            focusIntent.setAction(ANSWER_CLICK_ACTION);
-            focusIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            getApplicationContext().startActivity(focusIntent);*/
+        }else if(intent.getAction() == ACTION_ANSWER){
             handlePlay();
             updateNotification();
             //stopSelf();
@@ -153,7 +160,7 @@ public class CallService extends Service {
         return START_NOT_STICKY;
     }
 
-    private Notification buildNotification() {
+    private Notification buildNotification(boolean useChronometer) {
         NotificationCompat.Builder builder = getNotificationBuilder()
                 .setSmallIcon(getNotificationIcon("app_icon"))
                 .setColor(config.notificationColor)
@@ -161,8 +168,10 @@ public class CallService extends Service {
                 .setContentText(this.callData.callerName)
                 .setCategory(NotificationCompat.CATEGORY_CALL)
                 .setContentIntent(contentIntent)
-                .setUsesChronometer(true)
                 .setOngoing(true);
+        if(useChronometer){
+            builder.setUsesChronometer(true);
+        }
         Intent stopSelf = new Intent(this, CallService.class);
         stopSelf.setAction(ACTION_STOP_SERVICE);
         PendingIntent pStopSelf = PendingIntent
@@ -172,40 +181,6 @@ public class CallService extends Service {
                 pStopSelf);
         builder.setSubText("consult");
         return  builder.build();
-    }
-
-    private void startRingNotification() {
-        NotificationCompat.Builder builder = getHighNotificationBuilder()
-                .setSmallIcon(getNotificationIcon("app_icon"))
-                .setColor(config.notificationColor)
-                .setContentTitle(this.callData.description)
-                .setContentText(this.callData.callerName)
-                .setCategory(NotificationCompat.CATEGORY_CALL)
-                .setContentIntent(contentIntent)
-                .setUsesChronometer(true)
-                .setOngoing(true)
-                .setFullScreenIntent(contentIntent,true)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setTimeoutAfter(40000L).setAutoCancel(true);
-        Intent stopSelf = new Intent(this, CallService.class);
-        stopSelf.setAction(ACTION_DECLINE);
-        PendingIntent pStopSelf = PendingIntent
-                .getService(this, 0, stopSelf, PendingIntent.FLAG_CANCEL_CURRENT);
-        builder.addAction(getNotificationIcon("stop_icon"),
-                "Decline",
-                pStopSelf);
-        Intent answer = new Intent(this, CallService.class);
-        answer.setAction(ACTION_ANSWER);
-        PendingIntent pAnswer = PendingIntent
-                .getService(this, 0, answer, PendingIntent.FLAG_CANCEL_CURRENT);
-        builder.addAction(getNotificationIcon("stop_icon"),
-                "Answer",
-                pAnswer);
-        builder.setSubText("consult");
-        Notification notification= builder.build();
-        NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(RING_NOTIFICATION_ID,notification);
-        //notification.flags = notification.flags |= Notification.FLAG_INSISTENT;
     }
 
     private NotificationCompat.Builder getNotificationBuilder() {
@@ -236,51 +211,12 @@ public class CallService extends Service {
         }
     }
 
-    private NotificationCompat.Builder getHighNotificationBuilder() {
-        NotificationCompat.Builder notificationBuilder = null;
-        if (notificationBuilder == null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                createHighChannel();
-            int iconId = getResourceId(config.androidNotificationIcon);
-            notificationBuilder = new NotificationCompat.Builder(this, RINGING_CHANNEL)
-                    .setSmallIcon(iconId)
-                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                    .setShowWhen(false)
-                    .setDeleteIntent(buildDeletePendingIntent());
-        }
-        return notificationBuilder;
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private void createHighChannel() {
-        Uri uri= RingtoneManager.getActualDefaultRingtoneUri(this.getApplicationContext(), RingtoneManager.TYPE_RINGTONE);
-        NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        NotificationChannel channel = notificationManager.getNotificationChannel(RINGING_CHANNEL);
-        if (channel == null) {
-            channel = new NotificationChannel(RINGING_CHANNEL, "Call Ringing", NotificationManager.IMPORTANCE_HIGH);
-            channel.setShowBadge(config.androidShowNotificationBadge);
-            if (config.androidNotificationChannelDescription != null)
-                channel.setDescription(config.androidNotificationChannelDescription);
-            notificationManager.createNotificationChannel(channel);
-            AudioAttributes att = new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build();
-            channel.setSound(uri,att);
-        }
-    }
-
-    PendingIntent buildStopPendingIntent() {
-        Intent intent = new Intent(this, CallButtonReceiver.class);
-        intent.setAction(CallButtonReceiver.ACTION_NOTIFICATION_DELETE);
-        return PendingIntent.getBroadcast(this, 0, intent, 0);
-    }
-
     PendingIntent buildDeletePendingIntent() {
         Intent intent = new Intent(this, CallButtonReceiver.class);
         intent.setAction(CallButtonReceiver.ACTION_NOTIFICATION_DELETE);
         return PendingIntent.getBroadcast(this, 0, intent, 0);
     }
+
     public void handleDeleteNotification() {
         if (listener == null) return;
         listener.onClose();
@@ -316,25 +252,18 @@ public class CallService extends Service {
             // TODO: Handle completed state as well?
             stop();
         }
+        if(oldProcessingState != CallProcessingState.ready && processingState == CallProcessingState.ready){
+            updateNotification();
+        }
         /*if(processingState == CallProcessingState.loading){
             enterRingingState();
         }*/
         //updateNotification();
     }
-
     private boolean enterPlayingState() {
         acquireWakeLock();
         startService(new Intent(CallService.this, CallService.class));
-        startForeground(NOTIFICATION_ID, buildNotification());
-        notificationCreated = true;
-        return true;
-    }
-
-    private boolean enterRingingState() {
-        acquireWakeLock();
-        startService(new Intent(CallService.this, CallService.class));
-        startRingNotification();
-        //startForeground(RING_NOTIFICATION_ID, buildRingNotification());
+        startForeground(NOTIFICATION_ID, buildNotification(false));
         notificationCreated = true;
         return true;
     }
@@ -347,9 +276,22 @@ public class CallService extends Service {
     private void updateNotification() {
         if (!notificationCreated) return;
         NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(RING_NOTIFICATION_ID);
-        //notificationManager.notify(NOTIFICATION_ID, buildNotification());
+        notificationManager.notify(NOTIFICATION_ID, buildNotification(true));
     }
+
+    /*@Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.values[0] >= -SENSOR_SENSITIVITY && event.values[0] <= SENSOR_SENSITIVITY) {
+            //near
+        } else {
+            //far
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }*/
 
     public static interface ServiceListener {
         void onClick(MediaControl mediaControl);
