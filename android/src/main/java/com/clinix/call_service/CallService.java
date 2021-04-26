@@ -329,7 +329,7 @@ public class CallService extends Service {
             wakeLock.release();
         }
         if(pWakeLock.isHeld()){
-            pWakeLock.release();;
+            pWakeLock.release(1);
         }
     }
 
