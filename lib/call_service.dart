@@ -73,7 +73,7 @@ class PlaybackState {
   /// [processingState] can be [CallProcessingState.buffering], but alongside
   /// that [playing] can be true to indicate that the seek was performed while
   /// playing, or false to indicate that the seek was performed while paused.
-  final bool playing;
+  final bool? playing;
 
   /// The list of currently enabled controls which should be shown in the media
   /// notification. Each control represents a clickable button with a
@@ -92,7 +92,7 @@ class PlaybackState {
   /// Up to 3 indices of the [controls] that should appear in Android's compact
   /// media notification view. When the notification is expanded, all [controls]
   /// will be shown.
-  final List<int> androidCompactActionIndices;
+  final List<int>? androidCompactActionIndices;
 
   /// The set of system actions currently enabled. This is for specifying any
   /// other [MediaAction]s that are not supported by [controls], because they do
@@ -118,10 +118,10 @@ class PlaybackState {
   final Set<MediaAction> systemActions;
 
   /// The error code when [processingState] is [CallProcessingState.error].
-  final int errorCode;
+  final int? errorCode;
 
   /// The error message when [processingState] is [CallProcessingState.error].
-  final String errorMessage;
+  final String? errorMessage;
 
   /// Creates a [PlaybackState] with given field values, and with [updateTime]
   /// defaulting to [DateTime.now()].
@@ -131,7 +131,7 @@ class PlaybackState {
     this.controls = const [],
     this.androidCompactActionIndices,
     this.systemActions = const {},
-    DateTime updateTime,
+    DateTime? updateTime,
     this.errorCode,
     this.errorMessage,
   })  : assert(androidCompactActionIndices == null ||
@@ -143,13 +143,13 @@ class PlaybackState {
   /// [errorMessage] will be set to null unless [processingState] is
   /// [CallProcessingState.error].
   PlaybackState copyWith({
-    CallProcessingState processingState,
-    bool playing,
-    List<MediaControl> controls,
-    List<int> androidCompactActionIndices,
-    Set<MediaAction> systemActions,
-    int errorCode,
-    String errorMessage,
+    CallProcessingState? processingState,
+    bool? playing,
+    List<MediaControl>? controls,
+    List<int>? androidCompactActionIndices,
+    Set<MediaAction>? systemActions,
+    int? errorCode,
+    String? errorMessage,
   }) {
     processingState ??= this.processingState;
     return PlaybackState(
@@ -296,45 +296,45 @@ class Rating {
 /// Call items.
 class MediaItem {
   /// A unique id.
-  final String id;
+  final String? id;
 
   /// The album this media item belongs to.
-  final String album;
+  final String? album;
 
   /// The title of this media item.
-  final String title;
+  final String? title;
 
   /// The artwork for this media item as a uri.
-  final Uri artUri;
+  final Uri? artUri;
 
   /// Whether this is playable (i.e. not a folder).
-  final bool playable;
+  final bool? playable;
 
   /// Override the default title for display purposes.
-  final String displayTitle;
+  final String? displayTitle;
 
   /// Override the default subtitle for display purposes.
-  final String displaySubtitle;
+  final String? displaySubtitle;
 
   /// Override the default description for display purposes.
-  final String displayDescription;
+  final String? displayDescription;
 
   /// The rating of the MediaItem.
-  final Rating rating;
+  final Rating? rating;
 
   /// A map of additional metadata for the media item.
   ///
   /// The values must be integers or strings.
-  final Map<String, dynamic> extras;
+  final Map<String, dynamic>? extras;
 
   /// Creates a [MediaItem].
   ///
   /// [id], [album] and [title] must not be null, and [id] must be unique for
   /// each instance.
   const MediaItem({
-    @required this.id,
-    @required this.album,
-    @required this.title,
+    required this.id,
+    required this.album,
+    required this.title,
     this.artUri,
     this.playable = true,
     this.displayTitle,
@@ -347,16 +347,16 @@ class MediaItem {
   /// Creates a copy of this [MediaItem] with with the given fields replaced by
   /// new values.
   MediaItem copyWith({
-    String id,
-    String album,
-    String title,
-    Uri artUri,
-    bool playable,
-    String displayTitle,
-    String displaySubtitle,
-    String displayDescription,
-    Rating rating,
-    Map<String, dynamic> extras,
+    String? id,
+    String? album,
+    String? title,
+    Uri? artUri,
+    bool? playable,
+    String? displayTitle,
+    String? displaySubtitle,
+    String? displayDescription,
+    Rating? rating,
+    Map<String, dynamic>? extras,
   }) =>
       MediaItem(
         id: id ?? this.id,
@@ -457,9 +457,9 @@ class MediaControl {
   final MediaAction action;
 
   const MediaControl({
-    @required this.androidIcon,
-    @required this.label,
-    @required this.action,
+    required this.androidIcon,
+    required this.label,
+    required this.action,
   });
 
   MediaControlMessage _toMessage() => MediaControlMessage(
@@ -474,14 +474,14 @@ class MediaControl {
 /// requests to play Call.
 class CallService {
   /// The cache to use when loading artwork. Defaults to [DefaultCacheManager].
-  static BaseCacheManager get cacheManager => _cacheManager;
-  static BaseCacheManager _cacheManager;
+  static BaseCacheManager? get cacheManager => _cacheManager;
+  static BaseCacheManager? _cacheManager;
 
-  static  CallServiceConfig _config;
-  static  CallHandler _handler;
+  static  CallServiceConfig? _config;
+  static  late CallHandler _handler;
 
   /// The current configuration.
-  static CallServiceConfig get config => _config;
+  static CallServiceConfig? get config => _config;
 
   /// The root media ID for browsing media provided by the background
   /// task.
@@ -498,7 +498,7 @@ class CallService {
   static ValueStream<bool> get notificationClickEvent =>
       _notificationClickEvent;
 
-  static ReceivePort _customActionReceivePort;
+  static late ReceivePort _customActionReceivePort;
 
   /// Connect to the [CallHandler] from another isolate. The [CallHandler]
   /// must have been initialised via [init] prior to connecting.
@@ -517,9 +517,9 @@ class CallService {
   /// display in the media notification and lock screen. This defaults to
   /// [DefaultCacheManager].
   static Future<T> init<T extends CallHandler>({
-    @required T builder(),
-    CallServiceConfig config,
-    BaseCacheManager cacheManager,
+    required T builder(),
+    CallServiceConfig? config,
+    BaseCacheManager? cacheManager,
   }) async {
     assert(_cacheManager == null);
     config ??= CallServiceConfig();
@@ -543,7 +543,7 @@ class CallService {
           break;
         case 'prepareFromMediaId':
           await _handler.prepareFromMediaId(
-              request.arguments[0], request.arguments[1]);
+              request.arguments![0], request.arguments![1]);
           request.sendPort.send(null);
           break;
         case 'play':
@@ -552,11 +552,11 @@ class CallService {
           break;
         case 'playFromMediaId':
           await _handler.playFromMediaId(
-              request.arguments[0], request.arguments[1]);
+              request.arguments![0], request.arguments![1]);
           request.sendPort.send(null);
           break;
         case 'playMediaItem':
-          await _handler.playMediaItem(request.arguments[0]);
+          await _handler.playMediaItem(request.arguments![0]);
           request.sendPort.send(null);
           break;
         case 'pause':
@@ -564,7 +564,7 @@ class CallService {
           request.sendPort.send(null);
           break;
         case 'click':
-          await _handler.click(request.arguments[0]);
+          await _handler.click(request.arguments![0]);
           request.sendPort.send(null);
           break;
         case 'stop':
@@ -572,17 +572,17 @@ class CallService {
           request.sendPort.send(null);
           break;
         case 'updateMediaItem':
-          await _handler.updateMediaItem(request.arguments[0]);
+          await _handler.updateMediaItem(request.arguments![0]);
           request.sendPort.send(null);
           break;
         case 'setRating':
           await _handler.setRating(
-              request.arguments[0], request.arguments[1]);
+              request.arguments![0], request.arguments![1]);
           request.sendPort.send(null);
           break;
         case 'customAction':
           await _handler.customAction(
-              request.arguments[0], request.arguments[1]);
+              request.arguments![0], request.arguments![1]);
           request.sendPort.send(null);
           break;
         case 'onTaskRemoved':
@@ -595,32 +595,32 @@ class CallService {
           break;
         case 'getMediaItem':
           request.sendPort
-              .send(await _handler.getMediaItem(request.arguments[0]));
+              .send(await _handler.getMediaItem(request.arguments![0]));
           break;
       }
     });
     //IsolateNameServer.removePortNameMapping(_isolatePortName);
     IsolateNameServer.registerPortWithName(
         _customActionReceivePort.sendPort, _isolatePortName);
-    _handler.mediaItem.listen((MediaItem mediaItem) async {
+    _handler.mediaItem.listen((MediaItem? mediaItem) async {
       if (mediaItem == null) return;
       final artUri = mediaItem.artUri;
       if (artUri != null) {
         // We potentially need to fetch the art.
-        String filePath;
+        String? filePath;
         if (artUri.scheme == 'file') {
           filePath = artUri.toFilePath();
         } else {
-          final FileInfo fileInfo =
-          await cacheManager.getFileFromMemory(artUri.toString());
-          filePath = fileInfo.file.path;
+          final FileInfo? fileInfo =
+          await (cacheManager!.getFileFromMemory(artUri.toString()) as FutureOr<FileInfo>);
+          filePath = fileInfo?.file.path;
           if (filePath == null) {
             // We haven't fetched the art yet, so show the metadata now, and again
             // after we load the art.
             await _platform.setMediaItem(
                 SetMediaItemRequest(mediaItem: mediaItem._toMessage()));
             // Load the art
-            filePath = await _loadArtwork(mediaItem);
+            filePath = await (_loadArtwork(mediaItem));
             // If we failed to download the art, abort.
             if (filePath == null) return;
             // If we've already set a new media item, cancel this request.
@@ -663,13 +663,13 @@ class CallService {
     await _platform.stopService(StopServiceRequest());
   }
 
-  static Future<void> _loadAllArtwork(List<MediaItem> queue) async {
+  /*static Future<void> _loadAllArtwork(List<MediaItem> queue) async {
     for (var mediaItem in queue) {
       await _loadArtwork(mediaItem);
     }
-  }
+  }*/
 
-  static Future<String> _loadArtwork(MediaItem mediaItem) async {
+  static Future<String?> _loadArtwork(MediaItem mediaItem) async {
     try {
       final artUri = mediaItem.artUri;
       if (artUri != null) {
@@ -677,7 +677,7 @@ class CallService {
           return artUri.toFilePath();
         } else {
           final file =
-          await cacheManager.getSingleFile(mediaItem.artUri.toString());
+          await cacheManager!.getSingleFile(mediaItem.artUri.toString());
           return file.path;
         }
       }
@@ -701,36 +701,36 @@ abstract class CallHandler {
   Future<void> prepare();
 
   /// Prepare a specific media item for playback.
-  Future<void> prepareFromMediaId(String mediaId,
-      [Map<String, dynamic> extras]);
+  Future<void> prepareFromMediaId(String? mediaId,
+      [Map<String, dynamic>? extras]);
 
   /// Start or resume playback.
   Future<void> play();
 
   /// Play a specific media item.
-  Future<void> playFromMediaId(String mediaId, [Map<String, dynamic> extras]);
+  Future<void> playFromMediaId(String? mediaId, [Map<String, dynamic>? extras]);
 
   /// Play a specific media item.
-  Future<void> playMediaItem(MediaItem mediaItem);
+  Future<void> playMediaItem(MediaItem? mediaItem);
 
   /// Pause playback.
   Future<void> pause();
 
   /// Process a headset button click, where [button] defaults to
   /// [MediaButton.media].
-  Future<void> click([MediaButton button = MediaButton.media]);
+  Future<void> click([MediaButton? button = MediaButton.media]);
 
   /// Stop playback and release resources.
   Future<void> stop();
 
   /// Update the properties of [mediaItem].
-  Future<void> updateMediaItem(MediaItem mediaItem);
+  Future<void> updateMediaItem(MediaItem? mediaItem);
 
   /// Set the rating.
-  Future<void> setRating(Rating rating, Map<dynamic, dynamic> extras);
+  Future<void> setRating(Rating? rating, Map<dynamic, dynamic>? extras);
 
   /// A mechanism to support app-specific actions.
-  Future<dynamic> customAction(String name, Map<String, dynamic> extras);
+  Future<dynamic> customAction(String? name, Map<String, dynamic>? extras);
 
   /// Handle the task being swiped away in the task manager (Android).
   Future<void> onTaskRemoved();
@@ -739,7 +739,7 @@ abstract class CallHandler {
   Future<void> onNotificationDeleted();
 
   /// Get a particular media item.
-  Future<MediaItem> getMediaItem(String mediaId);
+  Future<MediaItem?> getMediaItem(String? mediaId);
 
   /// A value stream of playback states.
   ValueStream<PlaybackState> get playbackState;
@@ -748,7 +748,7 @@ abstract class CallHandler {
   ValueStream<String> get queueTitle;
 
   /// A value stream of the current media item.
-  ValueStream<MediaItem> get mediaItem;
+  ValueStream<MediaItem?> get mediaItem;
 
   /// A value stream of the current rating style.
   ValueStream<RatingStyle> get ratingStyle;
@@ -774,7 +774,7 @@ class SwitchCallHandler extends CompositeCallHandler {
   final BehaviorSubject<String> queueTitle = BehaviorSubject();
   @override
   // ignore: close_sinks
-  final BehaviorSubject<MediaItem> mediaItem = BehaviorSubject();
+  final BehaviorSubject<MediaItem?> mediaItem = BehaviorSubject();
   @override
   // ignore: close_sinks
   final BehaviorSubject<AndroidPlaybackInfo> androidPlaybackInfo =
@@ -789,13 +789,13 @@ class SwitchCallHandler extends CompositeCallHandler {
   // ignore: close_sinks
   final BehaviorSubject<dynamic> customState = BehaviorSubject();
 
-  StreamSubscription<PlaybackState> playbackStateSubscription;
-  StreamSubscription<String> queueTitleSubscription;
-  StreamSubscription<MediaItem> mediaItemSubscription;
-  StreamSubscription<AndroidPlaybackInfo> androidPlaybackInfoSubscription;
-  StreamSubscription<RatingStyle> ratingStyleSubscription;
-  StreamSubscription<dynamic> customEventSubscription;
-  StreamSubscription<dynamic> customStateSubscription;
+  StreamSubscription<PlaybackState>? playbackStateSubscription;
+  StreamSubscription<String>? queueTitleSubscription;
+  StreamSubscription<MediaItem?>? mediaItemSubscription;
+  StreamSubscription<AndroidPlaybackInfo>? androidPlaybackInfoSubscription;
+  StreamSubscription<RatingStyle>? ratingStyleSubscription;
+  StreamSubscription<dynamic>? customEventSubscription;
+  StreamSubscription<dynamic>? customStateSubscription;
 
   SwitchCallHandler(CallHandler inner) : super(inner) {
     this.inner = inner;
@@ -845,8 +845,8 @@ class CompositeCallHandler extends CallHandler {
 
   @override
   @mustCallSuper
-  Future<void> prepareFromMediaId(String mediaId,
-      [Map<String, dynamic> extras]) =>
+  Future<void> prepareFromMediaId(String? mediaId,
+      [Map<String, dynamic>? extras]) =>
       _inner.prepareFromMediaId(mediaId, extras);
   
   @override
@@ -855,13 +855,13 @@ class CompositeCallHandler extends CallHandler {
 
   @override
   @mustCallSuper
-  Future<void> playFromMediaId(String mediaId,
-      [Map<String, dynamic> extras]) =>
+  Future<void> playFromMediaId(String? mediaId,
+      [Map<String, dynamic>? extras]) =>
       _inner.playFromMediaId(mediaId, extras);
 
   @override
   @mustCallSuper
-  Future<void> playMediaItem(MediaItem mediaItem) =>
+  Future<void> playMediaItem(MediaItem? mediaItem) =>
       _inner.playMediaItem(mediaItem);
 
   @override
@@ -870,7 +870,7 @@ class CompositeCallHandler extends CallHandler {
 
   @override
   @mustCallSuper
-  Future<void> click([MediaButton button = MediaButton.media]) =>
+  Future<void> click([MediaButton? button = MediaButton.media]) =>
       _inner.click(button);
 
   @override
@@ -879,17 +879,17 @@ class CompositeCallHandler extends CallHandler {
 
   @override
   @mustCallSuper
-  Future<void> updateMediaItem(MediaItem mediaItem) =>
+  Future<void> updateMediaItem(MediaItem? mediaItem) =>
       _inner.updateMediaItem(mediaItem);
 
   @override
   @mustCallSuper
-  Future<void> setRating(Rating rating, Map<dynamic, dynamic> extras) =>
+  Future<void> setRating(Rating? rating, Map<dynamic, dynamic>? extras) =>
       _inner.setRating(rating, extras);
 
   @override
   @mustCallSuper
-  Future<dynamic> customAction(String name, Map<String, dynamic> extras) =>
+  Future<dynamic> customAction(String? name, Map<String, dynamic>? extras) =>
       _inner.customAction(name, extras);
 
   @override
@@ -902,7 +902,7 @@ class CompositeCallHandler extends CallHandler {
 
   @override
   @mustCallSuper
-  Future<MediaItem> getMediaItem(String mediaId) =>
+  Future<MediaItem?> getMediaItem(String? mediaId) =>
       _inner.getMediaItem(mediaId);
 
   @override
@@ -912,7 +912,7 @@ class CompositeCallHandler extends CallHandler {
   ValueStream<String> get queueTitle => _inner.queueTitle;
 
   @override
-  ValueStream<MediaItem> get mediaItem => _inner.mediaItem;
+  ValueStream<MediaItem?> get mediaItem => _inner.mediaItem;
 
   @override
   ValueStream<RatingStyle> get ratingStyle => _inner.ratingStyle;
@@ -932,7 +932,7 @@ class _IsolateRequest {
   /// The send port for sending the response of this request.
   final SendPort sendPort;
   final String method;
-  final List<dynamic> arguments;
+  final List<dynamic>? arguments;
 
   _IsolateRequest(this.sendPort, this.method, [this.arguments]);
 }
@@ -947,7 +947,7 @@ class _IsolateCallHandler extends CallHandler {
   BehaviorSubject.seeded(PlaybackState());
 
   @override
-  Future<void> updateMediaItem(MediaItem mediaItem) =>
+  Future<void> updateMediaItem(MediaItem? mediaItem) =>
       _send('updateMediaItem', [mediaItem]);
 
   @override
@@ -956,7 +956,7 @@ class _IsolateCallHandler extends CallHandler {
   final BehaviorSubject<String> queueTitle = BehaviorSubject.seeded('');
   @override
   // ignore: close_sinks
-  final BehaviorSubject<MediaItem> mediaItem = BehaviorSubject.seeded(null);
+  final BehaviorSubject<MediaItem?> mediaItem = BehaviorSubject.seeded(null);
   @override
   // TODO
   // ignore: close_sinks
@@ -984,27 +984,27 @@ class _IsolateCallHandler extends CallHandler {
   Future<void> prepare() => _send('prepare');
 
   @override
-  Future<void> prepareFromMediaId(String mediaId,
-      [Map<String, dynamic> extras]) =>
+  Future<void> prepareFromMediaId(String? mediaId,
+      [Map<String, dynamic>? extras]) =>
       _send('prepareFromMediaId', [mediaId, extras]);
 
   @override
   Future<void> play() => _send('play');
 
   @override
-  Future<void> playFromMediaId(String mediaId,
-      [Map<String, dynamic> extras]) =>
+  Future<void> playFromMediaId(String? mediaId,
+      [Map<String, dynamic>? extras]) =>
       _send('playFromMediaId', [mediaId, extras]);
 
   @override
-  Future<void> playMediaItem(MediaItem mediaItem) =>
+  Future<void> playMediaItem(MediaItem? mediaItem) =>
       _send('playMediaItem', [mediaItem]);
 
   @override
   Future<void> pause() => _send('pause');
 
   @override
-  Future<void> click([MediaButton button = MediaButton.media]) =>
+  Future<void> click([MediaButton? button = MediaButton.media]) =>
       _send('click', [button]);
 
   @override
@@ -1012,12 +1012,12 @@ class _IsolateCallHandler extends CallHandler {
   Future<void> stop() => _send('stop');
 
   @override
-  Future<void> setRating(Rating rating, Map<dynamic, dynamic> extras) =>
+  Future<void> setRating(Rating? rating, Map<dynamic, dynamic>? extras) =>
       _send('setRating', [rating, extras]);
   
 
   @override
-  Future<dynamic> customAction(String name, Map<String, dynamic> arguments) =>
+  Future<dynamic> customAction(String? name, Map<String, dynamic>? arguments) =>
       _send('customAction', [name, arguments]);
 
   @override
@@ -1027,11 +1027,11 @@ class _IsolateCallHandler extends CallHandler {
   Future<void> onNotificationDeleted() => _send('onNotificationDeleted');
 
   @override
-  Future<MediaItem> getMediaItem(String mediaId) async =>
-      (await _send('getMediaItem', [mediaId])) as MediaItem;
+  Future<MediaItem?> getMediaItem(String? mediaId) async =>
+      (await _send('getMediaItem', [mediaId])) as MediaItem?;
   
 
-  Future<dynamic> _send(String method, [List<dynamic> arguments]) async {
+  Future<dynamic> _send(String method, [List<dynamic>? arguments]) async {
     final sendPort = IsolateNameServer.lookupPortByName(_isolatePortName);
     if (sendPort == null) return null;
     final receivePort = ReceivePort();
@@ -1124,7 +1124,7 @@ class BaseCallHandler extends CallHandler {
   /// ```
   @override
   // ignore: close_sinks
-  final BehaviorSubject<MediaItem> mediaItem = BehaviorSubject.seeded(null);
+  final BehaviorSubject<MediaItem?> mediaItem = BehaviorSubject.seeded(null);
 
   /// A controller for broadcasting the current [AndroidPlaybackInfo] to the app's UI,
   /// media notification and other clients. Example usage:
@@ -1173,27 +1173,27 @@ class BaseCallHandler extends CallHandler {
   Future<void> prepare() async {}
 
   @override
-  Future<void> prepareFromMediaId(String mediaId,
-      [Map<String, dynamic> extras]) async {}
+  Future<void> prepareFromMediaId(String? mediaId,
+      [Map<String, dynamic>? extras]) async {}
 
   @override
   Future<void> play() async {}
 
   @override
-  Future<void> playFromMediaId(String mediaId,
-      [Map<String, dynamic> extras]) async {}
+  Future<void> playFromMediaId(String? mediaId,
+      [Map<String, dynamic>? extras]) async {}
 
   @override
-  Future<void> playMediaItem(MediaItem mediaItem) async {}
+  Future<void> playMediaItem(MediaItem? mediaItem) async {}
 
   @override
   Future<void> pause() async {}
 
   @override
-  Future<void> click([MediaButton button = MediaButton.media]) async {
+  Future<void> click([MediaButton? button = MediaButton.media]) async {
     switch (button) {
       case MediaButton.media:
-        if (playbackState.value?.playing == true) {
+        if (playbackState.value.playing == true) {
           await pause();
         } else {
           await play();
@@ -1205,6 +1205,8 @@ class BaseCallHandler extends CallHandler {
       case MediaButton.previous:
         //await skipToPrevious();
         break;
+      case null:
+        break;
     }
   }
 
@@ -1215,14 +1217,14 @@ class BaseCallHandler extends CallHandler {
   }
 
   @override
-  Future<void> updateMediaItem(MediaItem mediaItem) async {}
+  Future<void> updateMediaItem(MediaItem? mediaItem) async {}
 
   @override
-  Future<void> setRating(Rating rating, Map<dynamic, dynamic> extras) async {}
+  Future<void> setRating(Rating? rating, Map<dynamic, dynamic>? extras) async {}
 
   @override
   Future<dynamic> customAction(
-      String name, Map<String, dynamic> arguments) async {}
+      String? name, Map<String, dynamic>? arguments) async {}
 
   @override
   Future<void> onTaskRemoved() async {}
@@ -1233,7 +1235,7 @@ class BaseCallHandler extends CallHandler {
   }
 
   @override
-  Future<MediaItem> getMediaItem(String mediaId) async => null;
+  Future<MediaItem?> getMediaItem(String? mediaId) async => null;
 
   @override
   Stream<dynamic> get customEvent => customEventSubject.stream;
@@ -1243,11 +1245,11 @@ class BaseCallHandler extends CallHandler {
 class CallServiceConfig {
   final bool androidResumeOnClick;
   final String androidNotificationChannelName;
-  final String androidNotificationChannelDescription;
+  final String? androidNotificationChannelDescription;
 
   /// The color to use on the background of the notification on Android. This
   /// should be a non-transparent color.
-  final Color notificationColor;
+  final Color? notificationColor;
 
   /// The icon resource to be used in the Android media notification, specified
   /// like an XML resource reference. This should be a monochrome white icon on
@@ -1270,13 +1272,13 @@ class CallServiceConfig {
   /// downscaled to this maximum pixel width. If the resolution of your artwork
   /// is particularly high, this can help to conserve memory. If specified,
   /// [artDownscaleHeight] must also be specified.
-  final int artDownscaleWidth;
+  final int? artDownscaleWidth;
 
   /// If not null, causes the artwork specified by [MediaItem.artUri] to be
   /// downscaled to this maximum pixel height. If the resolution of your artwork
   /// is particularly high, this can help to conserve memory. If specified,
   /// [artDownscaleWidth] must also be specified.
-  final int artDownscaleHeight;
+  final int? artDownscaleHeight;
 
   /// The interval to be used in [CallHandler.fastForward]. This value will
   /// also be used on iOS to render the skip-forward button. This value must be
@@ -1295,7 +1297,7 @@ class CallServiceConfig {
   final bool preloadArtwork;
 
   /// Extras to report on Android in response to an `onGetRoot` request.
-  final Map<String, dynamic> androidBrowsableRootExtras;
+  final Map<String, dynamic>? androidBrowsableRootExtras;
 
   CallServiceConfig({
     this.androidResumeOnClick = true,
@@ -1414,15 +1416,15 @@ class RemoteAndroidPlaybackInfo extends AndroidPlaybackInfo {
   final int volume;
 
   RemoteAndroidPlaybackInfo({
-    @required this.volumeControlType,
-    @required this.maxVolume,
-    @required this.volume,
+    required this.volumeControlType,
+    required this.maxVolume,
+    required this.volume,
   });
 
   AndroidPlaybackInfo copyWith({
-    AndroidVolumeControlType volumeControlType,
-    int maxVolume,
-    int volume,
+    AndroidVolumeControlType? volumeControlType,
+    int? maxVolume,
+    int? volume,
   }) =>
       RemoteAndroidPlaybackInfo(
         volumeControlType: volumeControlType ?? this.volumeControlType,
@@ -1512,8 +1514,8 @@ class _HandlerCallbacks extends CallHandlerCallbacks {
   Future<void> updateMediaItem(UpdateMediaItemRequest request) =>
       handler.updateMediaItem(request.mediaItem.toPlugin());
 
-  final Map<String, ValueStream<Map<String, dynamic>>> _childrenSubscriptions =
-  <String, ValueStream<Map<String, dynamic>>>{};
+  /*final Map<String, ValueStream<Map<String, dynamic>>> _childrenSubscriptions =
+  <String, ValueStream<Map<String, dynamic>>>{};*/
 }
 
 class _ClientCallbacks extends CallClientCallbacks {

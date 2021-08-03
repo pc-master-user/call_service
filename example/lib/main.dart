@@ -1,3 +1,4 @@
+/*
 import 'dart:async';
 import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
@@ -184,9 +185,11 @@ class AgoraCallHandler extends BaseCallHandler
   String channelId= 'c6c2096f-21aa-40de-ab63-5654053d2f0b';
   String uid = 'SlYEuxcJ8ndu0tFI3LhpqMuyEjx1';
 
-  /*AudioPlayerHandler() {
+  */
+/*AudioPlayerHandler() {
     initRtcEngine();
-  }*/
+  }*//*
+
 
   initRtcEngine() async {
     bool isPermissionsGranted = await checkPermissions();
@@ -199,9 +202,11 @@ class AgoraCallHandler extends BaseCallHandler
       await _engine.setClientRole(ClientRole.Broadcaster);
       await _engine.setParameters('{"che.audio.opensl":true}');
       //callState = AgoraCallState(channelId, uid);
-      /*mediaItem
+      */
+/*mediaItem
           .whereType<MediaItem>()
-          .listen((item) => _recentSubject.add(item));*/
+          .listen((item) => _recentSubject.add(item));*//*
+
       addAgoraEventHandlers();
     }
   }
@@ -282,4 +287,4 @@ class AgoraCallHandler extends BaseCallHandler
 }
 
 /// Provides access to a library of media items. In your app, this could come
-/// from a database or web service.
+/// from a database or web service.*/
