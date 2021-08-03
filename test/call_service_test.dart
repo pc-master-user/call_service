@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:call_service/call_service.dart';
 
 void main() {
   const MethodChannel channel = MethodChannel('call_service');

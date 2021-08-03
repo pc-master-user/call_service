@@ -119,4 +119,4 @@ class MethodChannelCallService extends CallServicePlatform {
   }
 }
 
-_castMap(Map map) => map?.cast<String, dynamic>();
+_castMap(Map? map) => map?.cast<String, dynamic>();

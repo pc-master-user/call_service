@@ -164,9 +164,9 @@ class MediaControlMessage {
   final MediaActionMessage action;
 
   const MediaControlMessage({
-    @required this.androidIcon,
-    @required this.label,
-    @required this.action,
+    required this.androidIcon,
+    required this.label,
+    required this.action,
   });
 
   Map<String, dynamic> toMap() => {
@@ -194,7 +194,7 @@ class PlaybackStateMessage {
   /// [processingState] can be [CallProcessingState.buffering], but alongside
   /// that [playing] can be true to indicate that the seek was performed while
   /// playing, or false to indicate that the seek was performed while paused.
-  final bool playing;
+  final bool? playing;
 
   /// The list of currently enabled controls which should be shown in the media
   /// notification. Each control represents a clickable button with a
@@ -213,7 +213,7 @@ class PlaybackStateMessage {
   /// Up to 3 indices of the [controls] that should appear in Android's compact
   /// media notification view. When the notification is expanded, all [controls]
   /// will be shown.
-  final List<int> androidCompactActionIndices;
+  final List<int>? androidCompactActionIndices;
 
   /// The set of system actions currently enabled. This is for specifying any
   /// other [MediaAction]s that are not supported by [controls], because they do
@@ -242,10 +242,10 @@ class PlaybackStateMessage {
   final DateTime updateTime;
 
   /// The error code when [processingState] is [CallProcessingState.error].
-  final int errorCode;
+  final int? errorCode;
 
   /// The error message when [processingState] is [CallProcessingState.error].
-  final String errorMessage;
+  final String? errorMessage;
 
 
   /// Creates a [PlaybackState] with given field values, and with [updateTime]
@@ -256,7 +256,7 @@ class PlaybackStateMessage {
     this.controls = const [],
     this.androidCompactActionIndices,
     this.systemActions = const {},
-    DateTime updateTime,
+    DateTime? updateTime,
     this.errorCode,
     this.errorMessage,
   })  : assert(androidCompactActionIndices == null ||
@@ -312,9 +312,9 @@ class RemoteAndroidPlaybackInfoMessage extends AndroidPlaybackInfoMessage {
   final int volume;
 
   RemoteAndroidPlaybackInfoMessage({
-    @required this.volumeControlType,
-    @required this.maxVolume,
-    @required this.volume,
+    required this.volumeControlType,
+    required this.maxVolume,
+    required this.volume,
   });
 
   Map<String, dynamic> toMap() => {
@@ -346,45 +346,45 @@ enum MediaButtonMessage {
 
 class MediaItemMessage {
   /// A unique id.
-  final String id;
+  final String? id;
 
   /// The album this media item belongs to.
-  final String album;
+  final String? album;
 
   /// The title of this media item.
-  final String title;
+  final String? title;
 
   /// The artwork for this media item as a uri.
-  final Uri artUri;
+  final Uri? artUri;
 
   /// Whether this is playable (i.e. not a folder).
-  final bool playable;
+  final bool? playable;
 
   /// Override the default title for display purposes.
-  final String displayTitle;
+  final String? displayTitle;
 
   /// Override the default subtitle for display purposes.
-  final String displaySubtitle;
+  final String? displaySubtitle;
 
   /// Override the default description for display purposes.
-  final String displayDescription;
+  final String? displayDescription;
 
   /// The rating of the MediaItemMessage.
-  final RatingMessage rating;
+  final RatingMessage? rating;
 
   /// A map of additional metadata for the media item.
   ///
   /// The values must be integers or strings.
-  final Map<String, dynamic> extras;
+  final Map<String, dynamic>? extras;
 
   /// Creates a [MediaItemMessage].
   ///
   /// [id], [album] and [title] must not be null, and [id] must be unique for
   /// each instance.
   const MediaItemMessage({
-    @required this.id,
-    @required this.album,
-    @required this.title,
+    required this.id,
+    required this.album,
+    required this.title,
     this.artUri,
     this.playable = true,
     this.displayTitle,
@@ -407,7 +407,7 @@ class MediaItemMessage {
     displayDescription: raw['displayDescription'],
     rating:
     raw['rating'] != null ? RatingMessage.fromMap(raw['rating']) : null,
-    extras: (raw['extras'] as Map)?.cast<String, dynamic>(),
+    extras: (raw['extras'] as Map?)?.cast<String, dynamic>(),
   );
 
   /// Converts this [MediaItemMessage] to a map of key/value pairs corresponding to
@@ -431,7 +431,7 @@ class RatingMessage {
   final RatingStyleMessage type;
   final dynamic value;
 
-  const RatingMessage({@required this.type, @required this.value});
+  const RatingMessage({required this.type, required this.value});
 
   /// Returns a percentage rating value greater or equal to 0.0f, or a
   /// negative value if the rating style is not percentage-based, or
@@ -518,7 +518,7 @@ class OnPlaybackStateChangedRequest {
   final PlaybackStateMessage state;
 
   OnPlaybackStateChangedRequest({
-    @required this.state,
+    required this.state,
   });
 
   factory OnPlaybackStateChangedRequest.fromMap(Map map) =>
@@ -532,10 +532,10 @@ class OnPlaybackStateChangedRequest {
 
 
 class OnMediaItemChangedRequest {
-  final MediaItemMessage mediaItem;
+  final MediaItemMessage? mediaItem;
 
   OnMediaItemChangedRequest({
-    @required this.mediaItem,
+    required this.mediaItem,
   });
 
   factory OnMediaItemChangedRequest.fromMap(Map map) =>
@@ -554,7 +554,7 @@ class OnNotificationClickedRequest {
   final bool clicked;
 
   OnNotificationClickedRequest({
-    @required this.clicked,
+    required this.clicked,
   });
 
   factory OnNotificationClickedRequest.fromMap(Map map) =>
@@ -571,7 +571,7 @@ class SetStateRequest {
   final PlaybackStateMessage state;
 
   SetStateRequest({
-    @required this.state,
+    required this.state,
   });
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
@@ -582,7 +582,7 @@ class SetStateRequest {
 class SetMediaItemRequest {
   final MediaItemMessage mediaItem;
 
-  SetMediaItemRequest({@required this.mediaItem});
+  SetMediaItemRequest({required this.mediaItem});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'mediaItem': mediaItem.toMap(),
@@ -596,7 +596,7 @@ class StopServiceRequest {
 class SetAndroidPlaybackInfoRequest {
   final AndroidPlaybackInfoMessage playbackInfo;
 
-  SetAndroidPlaybackInfoRequest({@required this.playbackInfo});
+  SetAndroidPlaybackInfoRequest({required this.playbackInfo});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'playbackInfo': playbackInfo.toMap(),
@@ -608,10 +608,10 @@ class PrepareRequest {
 }
 
 class PrepareFromMediaIdRequest {
-  final String mediaId;
-  final Map<String, dynamic> extras;
+  final String? mediaId;
+  final Map<String, dynamic>? extras;
 
-  PrepareFromMediaIdRequest({@required this.mediaId, this.extras});
+  PrepareFromMediaIdRequest({required this.mediaId, this.extras});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'mediaId': mediaId,
@@ -623,10 +623,10 @@ class PlayRequest {
 }
 
 class PlayFromMediaIdRequest {
-  final String mediaId;
-  final Map<String, dynamic> extras;
+  final String? mediaId;
+  final Map<String, dynamic>? extras;
 
-  PlayFromMediaIdRequest({@required this.mediaId, this.extras});
+  PlayFromMediaIdRequest({required this.mediaId, this.extras});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'mediaId': mediaId,
@@ -636,7 +636,7 @@ class PlayFromMediaIdRequest {
 class PlayMediaItemRequest {
   final MediaItemMessage mediaItem;
 
-  PlayMediaItemRequest({@required this.mediaItem});
+  PlayMediaItemRequest({required this.mediaItem});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'mediaItem': mediaItem.toString(),
@@ -650,7 +650,7 @@ class PauseRequest {
 class ClickRequest {
   final MediaButtonMessage button;
 
-  ClickRequest({@required this.button});
+  ClickRequest({required this.button});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'button': button.index,
@@ -664,7 +664,7 @@ class StopRequest {
 class UpdateMediaItemRequest {
   final MediaItemMessage mediaItem;
 
-  UpdateMediaItemRequest({@required this.mediaItem});
+  UpdateMediaItemRequest({required this.mediaItem});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'mediaItem': mediaItem.toMap(),
@@ -673,9 +673,9 @@ class UpdateMediaItemRequest {
 
 class SetRatingRequest {
   final RatingMessage rating;
-  final Map<String, dynamic> extras;
+  final Map<String, dynamic>? extras;
 
-  SetRatingRequest({@required this.rating, this.extras});
+  SetRatingRequest({required this.rating, this.extras});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'rating': rating.toMap(),
@@ -684,10 +684,10 @@ class SetRatingRequest {
 }
 
 class CustomActionRequest {
-  final String name;
-  final Map<String, dynamic> extras;
+  final String? name;
+  final Map<String, dynamic>? extras;
 
-  CustomActionRequest({@required this.name, this.extras});
+  CustomActionRequest({required this.name, this.extras});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'name': name,
@@ -704,9 +704,9 @@ class OnNotificationDeletedRequest {
 }
 
 class GetMediaItemRequest {
-  final String mediaId;
+  final String? mediaId;
 
-  GetMediaItemRequest({@required this.mediaId});
+  GetMediaItemRequest({required this.mediaId});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'mediaId': mediaId,
@@ -714,9 +714,9 @@ class GetMediaItemRequest {
 }
 
 class GetMediaItemResponse {
-  final MediaItemMessage mediaItem;
+  final MediaItemMessage? mediaItem;
 
-  GetMediaItemResponse({@required this.mediaItem});
+  GetMediaItemResponse({required this.mediaItem});
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
     'mediaItem': mediaItem?.toMap(),
@@ -727,7 +727,7 @@ class ConfigureRequest {
   final CallServiceConfigMessage config;
 
   ConfigureRequest({
-    @required this.config,
+    required this.config,
   });
 
   Map<dynamic, dynamic> toMap() => <dynamic, dynamic>{
@@ -737,18 +737,18 @@ class ConfigureRequest {
 
 
 class ConfigureResponse {
-  static ConfigureResponse fromMap(Map<dynamic, dynamic> map) =>
+  static ConfigureResponse fromMap(Map<dynamic, dynamic>? map) =>
       ConfigureResponse();
 }
 
 class CallServiceConfigMessage {
   final bool androidResumeOnClick;
   final String androidNotificationChannelName;
-  final String androidNotificationChannelDescription;
+  final String? androidNotificationChannelDescription;
 
   /// The color to use on the background of the notification on Android. This
   /// should be a non-transparent color.
-  final Color notificationColor;
+  final Color? notificationColor;
 
   /// The icon resource to be used in the Android media notification, specified
   /// like an XML resource reference. This should be a monochrome white icon on
@@ -771,18 +771,18 @@ class CallServiceConfigMessage {
   /// downscaled to this maximum pixel width. If the resolution of your artwork
   /// is particularly high, this can help to conserve memory. If specified,
   /// [artDownscaleHeight] must also be specified.
-  final int artDownscaleWidth;
+  final int? artDownscaleWidth;
 
   /// If not null, causes the artwork specified by [MediaItemMessage.artUri] to be
   /// downscaled to this maximum pixel height. If the resolution of your artwork
   /// is particularly high, this can help to conserve memory. If specified,
   /// [artDownscaleWidth] must also be specified.
-  final int artDownscaleHeight;
+  final int? artDownscaleHeight;
 
   final bool preloadArtwork;
 
   /// Extras to report on Android in response to an `onGetRoot` request.
-  final Map<String, dynamic> androidBrowsableRootExtras;
+  final Map<String, dynamic>? androidBrowsableRootExtras;
 
   CallServiceConfigMessage({
     this.androidResumeOnClick = true,
