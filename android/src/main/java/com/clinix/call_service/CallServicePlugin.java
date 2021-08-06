@@ -1,24 +1,17 @@
 package com.clinix.call_service;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
-import android.graphics.drawable.Icon;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
-import android.telecom.Call;
-import android.telecom.Connection;
-import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
-import android.telephony.TelephonyManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -41,9 +34,6 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 
-import static com.clinix.call_service.Constants.EXTRA_CALLER_NAME;
-import static com.clinix.call_service.Constants.EXTRA_CALL_NUMBER;
-import static com.clinix.call_service.Constants.EXTRA_CALL_UUID;
 /** CallServicePlugin */
 public class CallServicePlugin implements FlutterPlugin, ActivityAware {
   /// The MethodChannel that will the communication between Flutter and native Android
