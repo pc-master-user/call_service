@@ -108,7 +108,7 @@ public class CallService extends Service {
             intent.setComponent(new ComponentName(context, config.activityClassName));
             //Intent intent = new Intent(context, config.activityClassName);
             intent.setAction(NOTIFICATION_CLICK_ACTION);
-            contentIntent = PendingIntent.getActivity(context, REQUEST_CONTENT_INTENT, intent, PendingIntent.FLAG_MUTABLE);
+            contentIntent = PendingIntent.getActivity(context, REQUEST_CONTENT_INTENT, intent, PendingIntent.FLAG_IMMUTABLE);
         } else {
             contentIntent = null;
         }
